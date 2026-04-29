@@ -1,0 +1,13 @@
+{
+  "name": "zuoye-checker",
+  "version": "1.0.0",
+  "description": "作业小卫士 - 微信小程序",
+  "miniprogram": "miniprogram",
+  "scripts": {
+    "tsc": "tsc"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^3.12.3",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,13 @@
+<view class="page">
+  <view class="card summary">
+    <view>总积分：<text class="num">{{totalPoints}}</text></view>
+    <view>连续天数：<text class="num">{{streakDays}}</text></view>
+  </view>
+
+  <view class="card" wx:for="{{records}}" wx:key="id">
+    <view class="row">
+      <text>{{item.description || '积分变更'}}</text>
+      <text class="plus">+{{item.points}}</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,55 @@
+<view class="page">
+  <!-- 日期头部 -->
+  <view class="date-header">
+    <text class="date-text">{{currentDate}}</text>
+    <text class="task-count" wx:if="{{totalTasks > 0}}">{{doneTasks}}/{{totalTasks}} 已完成</text>
+  </view>
+
+  <!-- 进度条 -->
+  <view class="progress-wrap" wx:if="{{totalTasks > 0}}">
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{totalTasks > 0 ? (doneTasks / totalTasks * 100) : 0}}%"></view>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{tasks.length === 0}}" class="empty-state">
+    <view class="empty-icon">📋</view>
+    <view class="empty-text">今天还没有任务</view>
+    <view class="empty-sub">去首页创建作业吧</view>
+  </view>
+
+  <!-- 任务列表 -->
+  <block wx:else>
+    <view
+      wx:for="{{tasks}}"
+      wx:key="id"
+      class="task-card {{item.status === 2 ? 'done' : ''}}"
+    >
+      <view class="task-header">
+        <view class="task-left">
+          <view class="task-check {{item.status === 2 ? 'checked' : ''}}">
+            <text wx:if="{{item.status === 2}}">✓</text>
+          </view>
+          <text class="task-title">{{item.title}}</text>
+        </view>
+        <text class="tag {{item.status === 2 ? 'tag-done' : 'tag-pending'}}">
+          {{item.status === 2 ? '已完成' : '待完成'}}
+        </text>
+      </view>
+      <view class="task-actions" wx:if="{{item.status !== 2}}">
+        <view class="btn-submit" data-id="{{item.id}}" bindtap="goSubmit">去提交</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 刷新按钮 -->
+  <view class="refresh-btn" bindtap="onRefresh" wx:if="{{!loading && tasks.length > 0}}">
+    刷新任务
+  </view>
+</view>

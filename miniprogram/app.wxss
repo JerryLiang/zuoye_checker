@@ -1,0 +1,195 @@
+/* ============================
+   作业小卫士 - 全局样式
+   主题色：#4F6EF7
+   ============================ */
+
+page {
+  background-color: #F5F6FA;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+/* 通用页面容器 */
+.page {
+  padding: 24rpx;
+  min-height: 100vh;
+  background: #F5F6FA;
+}
+
+/* 通用卡片 */
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+/* 通用标题 */
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+/* 主题色按钮 */
+.btn-primary {
+  background: linear-gradient(135deg, #4F6EF7 0%, #7B93FA 100%);
+  color: #fff;
+  border: none;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  padding: 20rpx 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary::after {
+  border: none;
+}
+
+/* 次要按钮 */
+.btn-secondary {
+  background: #fff;
+  color: #4F6EF7;
+  border: 2rpx solid #4F6EF7;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  padding: 16rpx 0;
+  text-align: center;
+}
+
+.btn-secondary::after {
+  border: none;
+}
+
+/* 通用输入框 */
+.input-field {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2rpx solid #E8EAF0;
+  border-radius: 16rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  background: #FAFBFE;
+  transition: border-color 0.2s;
+}
+
+/* 通用文本域 */
+.textarea-field {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2rpx solid #E8EAF0;
+  border-radius: 16rpx;
+  padding: 22rpx 24rpx;
+  min-height: 240rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  background: #FAFBFE;
+}
+
+/* 选择器 */
+.picker-field {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2rpx solid #E8EAF0;
+  border-radius: 16rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  background: #FAFBFE;
+  color: #333;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80rpx 40rpx;
+  color: #999;
+}
+
+.empty-state .empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-state .empty-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+/* 加载状态 */
+.loading-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+  color: #999;
+  font-size: 26rpx;
+}
+
+/* 列表行 */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 状态标签 */
+.tag {
+  display: inline-block;
+  font-size: 22rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  font-weight: 500;
+}
+
+.tag-pending {
+  background: #FFF7E6;
+  color: #FA8C16;
+}
+
+.tag-done {
+  background: #F0FFF4;
+  color: #52C41A;
+}
+
+.tag-fail {
+  background: #FFF1F0;
+  color: #F5222D;
+}
+
+/* 顶部欢迎横幅 */
+.hero-banner {
+  background: linear-gradient(135deg, #4F6EF7 0%, #7B93FA 100%);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  color: #fff;
+  margin-bottom: 24rpx;
+}
+
+.hero-banner .hero-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.hero-banner .hero-sub {
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+/* 分隔线 */
+.divider {
+  height: 1rpx;
+  background: #F0F0F0;
+  margin: 20rpx 0;
+}

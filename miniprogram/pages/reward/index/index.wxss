@@ -1,0 +1,6 @@
+.page { padding: 24rpx; }
+.card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.summary { font-size: 32rpx; }
+.num { color: #1677ff; font-weight: 700; }
+.row { display: flex; justify-content: space-between; }
+.plus { color: #16a34a; }
