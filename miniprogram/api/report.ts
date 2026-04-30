@@ -1,7 +1,5 @@
-import { http } from './http';
-
 export interface WeeklyReport {
-  child_id: number;
+  child_id: string;
   week_start: string;
   week_end: string;
   summary: {
@@ -19,8 +17,16 @@ export interface WeeklyReport {
   }>;
 }
 
+async function callReports(action: string, data: any = {}) {
+  const res = await wx.cloud.callFunction({
+    name: 'reports',
+    data: { action, ...data },
+  });
+  return res.result as { code: number; message: string; data: any };
+}
+
 export const reportApi = {
-  weekly(childId: number, startDate?: string) {
-    return http.get<WeeklyReport>('/reports/weekly', { child_id: childId, start_date: startDate });
+  weekly(childId: string, startDate?: string) {
+    return callReports('weekly', { data: { child_id: childId, start_date: startDate } });
   },
 };

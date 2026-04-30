@@ -1,8 +1,6 @@
-import { http } from './http';
-
 export interface ChildItem {
-  id: number;
-  user_id: number;
+  _id: string;
+  user_id: string;
   name: string;
   gender?: 1 | 2;
   birth_date?: string;
@@ -10,20 +8,28 @@ export interface ChildItem {
   grade?: string;
 }
 
+async function callChildren(action: string, data: any = {}) {
+  const res = await wx.cloud.callFunction({
+    name: 'children',
+    data: { action, ...data },
+  });
+  return res.result as { code: number; message: string; data: any };
+}
+
 export const childApi = {
   list() {
-    return http.get<ChildItem[]>('/children');
+    return callChildren('list');
   },
-  get(id: number) {
-    return http.get<ChildItem>(`/children/${id}`);
+  get(id: string) {
+    return callChildren('get', { id });
   },
   create(payload: { name: string; age_group: '3-6' | '7-9' | '10-12'; gender?: 1 | 2; birth_date?: string; grade?: string }) {
-    return http.post<ChildItem>('/children', payload);
+    return callChildren('create', { data: payload });
   },
-  update(id: number, payload: Partial<Pick<ChildItem, 'name' | 'age_group' | 'gender' | 'birth_date' | 'grade'>>) {
-    return http.put<ChildItem>(`/children/${id}`, payload);
+  update(id: string, payload: Partial<Pick<ChildItem, 'name' | 'age_group' | 'gender' | 'birth_date' | 'grade'>>) {
+    return callChildren('update', { id, data: payload });
   },
-  remove(id: number) {
-    return http.del(`/children/${id}`);
+  remove(id: string) {
+    return callChildren('delete', { id });
   },
 };

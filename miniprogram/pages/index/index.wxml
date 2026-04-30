@@ -19,9 +19,9 @@
         <view class="child-pills">
           <view
             wx:for="{{children}}"
-            wx:key="id"
-            class="child-pill {{currentChildId === item.id ? 'active' : ''}}"
-            data-id="{{item.id}}"
+            wx:key="_id"
+            class="child-pill {{currentChildId === item._id ? 'active' : ''}}"
+            data-id="{{item._id}}"
             bindtap="onSelectChild"
           >
             {{item.name}}
@@ -56,7 +56,7 @@
 
       <view
         wx:for="{{todayTasks}}"
-        wx:key="id"
+        wx:key="_id"
         class="task-item {{item.status === 2 ? 'done' : ''}}"
       >
         <view class="task-left">
@@ -67,7 +67,7 @@
           <text class="tag {{item.status === 2 ? 'tag-done' : 'tag-pending'}}">
             {{item.status === 2 ? '已完成' : '待完成'}}
           </text>
-          <view wx:if="{{item.status !== 2}}" class="btn-go" data-id="{{item.id}}" bindtap="goTaskSubmit">
+          <view wx:if="{{item.status !== 2}}" class="btn-go" data-id="{{item._id}}" bindtap="goTaskSubmit">
             去完成
           </view>
         </view>

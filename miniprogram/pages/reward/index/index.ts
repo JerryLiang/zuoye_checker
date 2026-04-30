@@ -4,7 +4,7 @@ Page({
   data: {
     totalPoints: 0,
     streakDays: 0,
-    records: [] as Array<{ id: number; description: string; points: number }>,
+    records: [] as Array<{ _id: string; description: string; points: number }>,
   },
 
   async onShow() {
@@ -22,6 +22,6 @@ Page({
 
 interface IAppOption {
   globalData: {
-    currentChildId: number;
+    currentChildId: string;
   };
 }

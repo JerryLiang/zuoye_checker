@@ -2,7 +2,7 @@ import { childApi } from '../../../api/child';
 
 Page({
   data: {
-    editId: 0,
+    editId: '',
     name: '',
     ageGroup: '3-6',
     ageIndex: 0,
@@ -12,14 +12,14 @@ Page({
 
   onLoad(options: Record<string, string>) {
     if (options.id) {
-      const id = Number(options.id);
+      const id = options.id;
       this.setData({ editId: id, isEdit: true });
       wx.setNavigationBarTitle({ title: '编辑孩子' });
       this.loadChild(id);
     }
   },
 
-  async loadChild(id: number) {
+  async loadChild(id: string) {
     try {
       const res = await childApi.get(id);
       const child = res.data;

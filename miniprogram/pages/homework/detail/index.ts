@@ -5,7 +5,7 @@ Page({
     batch: null as HomeworkBatch | null,
     tasks: [] as TaskInBatch[],
     loading: true,
-    batchId: 0,
+    batchId: '',
     doneCount: 0,
     totalCount: 0,
     progressPct: 0,
@@ -13,12 +13,12 @@ Page({
 
   onLoad(options: Record<string, string>) {
     if (options.id) {
-      this.setData({ batchId: Number(options.id) });
-      this.loadDetail(Number(options.id));
+      this.setData({ batchId: options.id });
+      this.loadDetail(options.id);
     }
   },
 
-  async loadDetail(id: number) {
+  async loadDetail(id: string) {
     try {
       this.setData({ loading: true });
       const res = await homeworkApi.get(id);
@@ -36,7 +36,7 @@ Page({
   },
 
   goSubmit(e: WechatMiniprogram.BaseEvent) {
-    const id = Number(e.currentTarget.dataset.id);
+    const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
   },
 

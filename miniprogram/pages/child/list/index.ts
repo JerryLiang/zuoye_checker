@@ -3,7 +3,7 @@ import { childApi, ChildItem } from '../../../api/child';
 Page({
   data: {
     children: [] as ChildItem[],
-    currentChildId: 0,
+    currentChildId: '',
     loading: true,
   },
 
@@ -30,13 +30,13 @@ Page({
   },
 
   goEdit(e: WechatMiniprogram.BaseEvent) {
-    const id = Number(e.currentTarget.dataset.id);
+    const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/child/edit/index?id=${id}` });
   },
 
   async onDelete(e: WechatMiniprogram.BaseEvent) {
-    const id = Number(e.currentTarget.dataset.id);
-    const child = this.data.children.find((c) => c.id === id);
+    const id = e.currentTarget.dataset.id;
+    const child = this.data.children.find((c) => c._id === id);
     const res = await wx.showModal({
       title: '确认删除',
       content: `确定要删除「${child?.name || ''}」吗？`,
@@ -53,7 +53,7 @@ Page({
   },
 
   onSelectChild(e: WechatMiniprogram.BaseEvent) {
-    const id = Number(e.currentTarget.dataset.id);
+    const id = e.currentTarget.dataset.id;
     const app = getApp<IAppOption>();
     app.globalData.currentChildId = id;
     wx.setStorageSync('currentChildId', id);
@@ -64,6 +64,6 @@ Page({
 
 interface IAppOption {
   globalData: {
-    currentChildId: number;
+    currentChildId: string;
   };
 }

@@ -56,7 +56,7 @@ Page({
     });
 
     const loginRes = await authApi.wechatLogin({
-      openid: login.code,
+      code: login.code,
       nickname: '家长用户',
     });
 
@@ -71,9 +71,9 @@ Page({
     try {
       const res = await childApi.list();
       const children = res.data || [];
-      const currentId = app.globalData.currentChildId || (children[0]?.id ?? 0);
+      const currentId = app.globalData.currentChildId || (children[0]?._id ?? '');
 
-      const currentChild = children.find((c: ChildItem) => c.id === currentId) || null;
+      const currentChild = children.find((c: ChildItem) => c._id === currentId) || null;
 
       this.setData({ children, currentChildId: currentId, currentChild });
 
@@ -105,12 +105,12 @@ Page({
   },
 
   onSelectChild(e: WechatMiniprogram.BaseEvent) {
-    const childId = Number(e.currentTarget.dataset.id || 0);
+    const childId = e.currentTarget.dataset.id || '';
     const app = getApp<IAppOption>();
     app.globalData.currentChildId = childId;
     wx.setStorageSync('currentChildId', childId);
 
-    const currentChild = this.data.children.find(c => c.id === childId) || null;
+    const currentChild = this.data.children.find(c => c._id === childId) || null;
     this.setData({ currentChildId: childId, currentChild });
     this.loadTodayTasks();
   },
@@ -128,16 +128,15 @@ Page({
   },
 
   goTaskSubmit(e: WechatMiniprogram.BaseEvent) {
-    const id = Number(e.currentTarget.dataset.id);
+    const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
   },
 });
 
 interface IAppOption {
   globalData: {
-    baseURL: string;
     token: string;
-    userId: number;
-    currentChildId: number;
+    userId: string;
+    currentChildId: string;
   };
 }
