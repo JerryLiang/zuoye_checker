@@ -1,4 +1,4 @@
-import { homeworkApi, HomeworkBatch, TaskInBatch } from '../../../../api/homework';
+import { homeworkApi, HomeworkBatch, TaskInBatch } from '../../../api/homework';
 
 Page({
   data: {

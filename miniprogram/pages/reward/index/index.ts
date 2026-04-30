@@ -1,4 +1,4 @@
-import { rewardApi } from '../../../../api/reward';
+import { rewardApi } from '../../../api/reward';
 
 Page({
   data: {

@@ -1,4 +1,4 @@
-import { taskApi } from '../../../../api/task';
+import { taskApi } from '../../../api/task';
 
 Page({
   data: {

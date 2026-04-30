@@ -1,4 +1,4 @@
-import { childApi, ChildItem } from '../../../../api/child';
+import { childApi, ChildItem } from '../../../api/child';
 
 Page({
   data: {

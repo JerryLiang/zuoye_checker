@@ -1,4 +1,4 @@
-import { homeworkApi } from '../../../../api/homework';
+import { homeworkApi } from '../../../api/homework';
 
 Page({
   data: {

@@ -1,4 +1,4 @@
-import { reportApi, WeeklyReport } from '../../../../api/report';
+import { reportApi, WeeklyReport } from '../../../api/report';
 
 Page({
   data: {
