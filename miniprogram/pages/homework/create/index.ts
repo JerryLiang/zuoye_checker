@@ -65,7 +65,7 @@ Page({
 
 interface IAppOption {
   globalData: {
-    userId: number;
-    currentChildId: number;
+    userId: string;
+    currentChildId: string;
   };
 }

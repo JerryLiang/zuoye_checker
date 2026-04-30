@@ -46,7 +46,7 @@ Page({
   },
 
   goSubmit(e: WechatMiniprogram.BaseEvent) {
-    const id = Number(e.currentTarget.dataset.id);
+    const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
   },
 
@@ -58,6 +58,6 @@ Page({
 
 interface IAppOption {
   globalData: {
-    currentChildId: number;
+    currentChildId: string;
   };
 }

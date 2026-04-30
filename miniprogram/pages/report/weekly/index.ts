@@ -50,7 +50,7 @@ Page({
     this.fetchWeek(childId, nextStart);
   },
 
-  async fetchWeek(childId: number, startDate: string) {
+  async fetchWeek(childId: string, startDate: string) {
     try {
       this.setData({ loading: true });
       const res = await reportApi.weekly(childId, startDate);
@@ -91,6 +91,6 @@ Page({
 
 interface IAppOption {
   globalData: {
-    currentChildId: number;
+    currentChildId: string;
   };
 }

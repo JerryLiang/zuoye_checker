@@ -1,20 +1,21 @@
 App<IAppOption>({
   globalData: {
-    baseURL: '',
     token: '',
-    userId: 0,
-    currentChildId: 0,
+    userId: '',
+    currentChildId: '',
   },
   onLaunch() {
-    const accountInfo = wx.getAccountInfoSync();
-    const envVersion = accountInfo.miniProgram.envVersion;
-
-    if (envVersion === 'develop') {
-      this.globalData.baseURL = 'http://127.0.0.1:8000/api/v1';
+    // 初始化云开发
+    if (!wx.cloud) {
+      console.error('请使用 2.2.3 或以上的基础库以使用云能力');
     } else {
-      this.globalData.baseURL = 'https://api.example.com/api/v1';
+      wx.cloud.init({
+        env: 'your-env-id', // 替换为你的云开发环境ID
+        traceUser: true,
+      });
     }
 
+    // 尝试恢复登录状态
     const token = wx.getStorageSync('token');
     const userId = wx.getStorageSync('userId');
     const currentChildId = wx.getStorageSync('currentChildId');
@@ -27,9 +28,8 @@ App<IAppOption>({
 
 interface IAppOption {
   globalData: {
-    baseURL: string;
     token: string;
-    userId: number;
-    currentChildId: number;
+    userId: string;
+    currentChildId: string;
   };
 }

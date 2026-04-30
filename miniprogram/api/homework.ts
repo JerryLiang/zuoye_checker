@@ -1,9 +1,7 @@
-import { http } from './http';
-
 export interface HomeworkBatch {
-  id: number;
-  user_id: number;
-  child_id: number;
+  _id: string;
+  user_id: string;
+  child_id: string;
   subject: string;
   input_source: 1 | 2 | 3 | 4;
   raw_text: string;
@@ -15,14 +13,14 @@ export interface HomeworkBatch {
 }
 
 export interface TaskInBatch {
-  id: number;
+  _id: string;
   title: string;
   status: 1 | 2 | 3;
   submission?: {
-    id: number;
+    _id: string;
     submit_type: 1 | 2 | 3;
     submit_text?: string;
-    file_asset_id?: number;
+    file_asset_id?: string;
     submitted_at: string;
     check_result?: {
       is_passed: boolean;
@@ -32,26 +30,34 @@ export interface TaskInBatch {
   };
 }
 
+async function callHomeworks(action: string, data: any = {}) {
+  const res = await wx.cloud.callFunction({
+    name: 'homeworks',
+    data: { action, ...data },
+  });
+  return res.result as { code: number; message: string; data: any };
+}
+
 export const homeworkApi = {
-  list(child_id?: number) {
-    return http.get<HomeworkBatch[]>('/homeworks', child_id ? { child_id } : undefined);
+  list(child_id?: string) {
+    return callHomeworks('list', { data: child_id ? { child_id } : {} });
   },
-  get(id: number) {
-    return http.get<HomeworkBatch>(`/homeworks/${id}`);
+  get(id: string) {
+    return callHomeworks('get', { id });
   },
   create(payload: {
-    child_id: number;
+    child_id: string;
     subject?: string;
     input_source: 1 | 2 | 3 | 4;
     raw_text?: string;
     batch_date: string;
   }) {
-    return http.post('/homeworks', payload);
+    return callHomeworks('create', { data: payload });
   },
-  update(id: number, payload: Partial<Pick<HomeworkBatch, 'subject' | 'raw_text' | 'status'>>) {
-    return http.put(`/homeworks/${id}`, payload);
+  update(id: string, payload: Partial<Pick<HomeworkBatch, 'subject' | 'raw_text' | 'status'>>) {
+    return callHomeworks('update', { id, data: payload });
   },
-  remove(id: number) {
-    return http.del(`/homeworks/${id}`);
+  remove(id: string) {
+    return callHomeworks('delete', { id });
   },
 };

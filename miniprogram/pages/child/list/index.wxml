@@ -16,10 +16,10 @@
   <block wx:else>
     <view
       wx:for="{{children}}"
-      wx:key="id"
-      class="child-card {{item.id === currentChildId ? 'active' : ''}}"
+      wx:key="_id"
+      class="child-card {{item._id === currentChildId ? 'active' : ''}}"
     >
-      <view class="child-info" data-id="{{item.id}}" bindtap="onSelectChild">
+      <view class="child-info" data-id="{{item._id}}" bindtap="onSelectChild">
         <view class="avatar">
           <text class="avatar-text">{{item.name[0] || '?'}}</text>
         </view>
@@ -30,11 +30,11 @@
             <text class="meta-tag" wx:if="{{item.grade}}">{{item.grade}}</text>
           </view>
         </view>
-        <view class="current-badge" wx:if="{{item.id === currentChildId}}">当前</view>
+        <view class="current-badge" wx:if="{{item._id === currentChildId}}">当前</view>
       </view>
       <view class="child-actions">
-        <view class="btn-action" data-id="{{item.id}}" bindtap="goEdit">编辑</view>
-        <view class="btn-action btn-danger" data-id="{{item.id}}" bindtap="onDelete">删除</view>
+        <view class="btn-action" data-id="{{item._id}}" bindtap="goEdit">编辑</view>
+        <view class="btn-action btn-danger" data-id="{{item._id}}" bindtap="onDelete">删除</view>
       </view>
     </view>
 

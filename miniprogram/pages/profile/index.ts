@@ -45,8 +45,8 @@ Page({
           wx.clearStorageSync();
           const app = getApp<IAppOption>();
           app.globalData.token = '';
-          app.globalData.userId = 0;
-          app.globalData.currentChildId = 0;
+          app.globalData.userId = '';
+          app.globalData.currentChildId = '';
           wx.showToast({ title: '已清除', icon: 'success' });
         }
       },
@@ -57,7 +57,7 @@ Page({
 interface IAppOption {
   globalData: {
     token: string;
-    userId: number;
-    currentChildId: number;
+    userId: string;
+    currentChildId: string;
   };
 }

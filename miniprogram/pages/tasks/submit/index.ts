@@ -2,13 +2,13 @@ import { taskApi } from '../../../api/task';
 
 Page({
   data: {
-    taskId: 0,
+    taskId: '',
     text: '',
     submitting: false,
   },
 
   onLoad(query: Record<string, string>) {
-    this.setData({ taskId: Number(query.taskId || 0) });
+    this.setData({ taskId: query.taskId || '' });
   },
 
   onTextInput(e: WechatMiniprogram.TextareaInput) {
@@ -56,6 +56,6 @@ Page({
 
 interface IAppOption {
   globalData: {
-    currentChildId: number;
+    currentChildId: string;
   };
 }

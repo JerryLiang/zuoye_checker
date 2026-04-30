@@ -28,7 +28,7 @@
   <block wx:else>
     <view
       wx:for="{{tasks}}"
-      wx:key="id"
+      wx:key="_id"
       class="task-card {{item.status === 2 ? 'done' : ''}}"
     >
       <view class="task-header">
@@ -43,7 +43,7 @@
         </text>
       </view>
       <view class="task-actions" wx:if="{{item.status !== 2}}">
-        <view class="btn-submit" data-id="{{item.id}}" bindtap="goSubmit">去提交</view>
+        <view class="btn-submit" data-id="{{item._id}}" bindtap="goSubmit">去提交</view>
       </view>
     </view>
   </block>
