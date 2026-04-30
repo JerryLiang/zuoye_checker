@@ -45,7 +45,7 @@
   },
   "appid": "wx665ba9e30631bffe",
   "projectname": "zuoye-checker",
-  "libVersion": "3.15.2",
+  "libVersion": "3.14.3",
   "compileType": "miniprogram",
   "condition": {},
   "editorSetting": {
@@ -56,5 +56,6 @@
   "packOptions": {
     "ignore": [],
     "include": []
-  }
+  },
+  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/"
 }
