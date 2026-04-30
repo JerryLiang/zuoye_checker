@@ -1,0 +1,77 @@
+<view class="page">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text>加载中...</text>
+  </view>
+
+  <block wx:elif="{{batch}}">
+    <!-- 批次信息卡片 -->
+    <view class="batch-card">
+      <view class="batch-header">
+        <view class="subject-tag">{{batch.subject || '综合'}}</view>
+        <text class="batch-date">{{batch.batch_date}}</text>
+      </view>
+      <view class="batch-progress" wx:if="{{totalCount > 0}}">
+        <view class="progress-info">
+          <text class="progress-text">完成进度 {{doneCount}}/{{totalCount}}</text>
+          <text class="progress-pct">{{totalCount > 0 ? (doneCount / totalCount * 100).toFixed(0) : 0}}%</text>
+        </view>
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{totalCount > 0 ? (doneCount / totalCount * 100) : 0}}%"></view>
+        </view>
+      </view>
+      <view class="raw-text" wx:if="{{batch.raw_text}}">
+        <text class="raw-label">原始内容</text>
+        <text class="raw-content">{{batch.raw_text}}</text>
+      </view>
+    </view>
+
+    <!-- 任务列表 -->
+    <view class="section-title">任务列表</view>
+
+    <view wx:if="{{tasks.length === 0}}" class="empty-state">
+      <text class="empty-text">暂无任务</text>
+    </view>
+
+    <block wx:else>
+      <view
+        wx:for="{{tasks}}"
+        wx:key="id"
+        class="task-card {{item.status === 2 ? 'done' : ''}}"
+      >
+        <view class="task-top">
+          <view class="task-left">
+            <view class="task-check {{item.status === 2 ? 'checked' : 'pending'}}">
+              <text wx:if="{{item.status === 2}}">✓</text>
+            </view>
+            <text class="task-title">{{item.title}}</text>
+          </view>
+          <text class="status-tag {{item.status === 2 ? 'tag-done' : 'tag-pending'}}">
+            {{item.status === 2 ? '已完成' : '待完成'}}
+          </text>
+        </view>
+
+        <!-- 提交信息 -->
+        <view class="submission-info" wx:if="{{item.submission}}">
+          <view class="score-badge {{item.submission.check_result && item.submission.check_result.is_passed ? 'pass' : 'fail'}}">
+            {{item.submission.check_result ? item.submission.check_result.score + '分' : '待批改'}}
+          </view>
+          <text class="feedback" wx:if="{{item.submission.check_result && item.submission.check_result.feedback}}">
+            {{item.submission.check_result.feedback}}
+          </text>
+        </view>
+
+        <!-- 操作 -->
+        <view class="task-actions" wx:if="{{item.status !== 2}}">
+          <view class="btn-submit" data-id="{{item.id}}" bindtap="goSubmit">去提交</view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 底部操作 -->
+    <view class="bottom-actions">
+      <view class="btn-refresh" bindtap="onRefresh">刷新</view>
+      <view class="btn-delete" bindtap="onDeleteBatch">删除作业</view>
+    </view>
+  </block>
+</view>

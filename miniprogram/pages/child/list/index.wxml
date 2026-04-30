@@ -1,0 +1,43 @@
+<view class="page">
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{children.length === 0}}" class="empty-state">
+    <view class="empty-icon">👦</view>
+    <view class="empty-text">还没有添加孩子</view>
+    <view class="empty-sub">点击下方按钮添加</view>
+    <view class="btn-add-empty" bindtap="goAdd">添加孩子</view>
+  </view>
+
+  <!-- 列表 -->
+  <block wx:else>
+    <view
+      wx:for="{{children}}"
+      wx:key="id"
+      class="child-card {{item.id === currentChildId ? 'active' : ''}}"
+    >
+      <view class="child-info" data-id="{{item.id}}" bindtap="onSelectChild">
+        <view class="avatar">
+          <text class="avatar-text">{{item.name[0] || '?'}}</text>
+        </view>
+        <view class="child-detail">
+          <text class="child-name">{{item.name}}</text>
+          <view class="child-meta">
+            <text class="meta-tag">{{item.age_group}}岁</text>
+            <text class="meta-tag" wx:if="{{item.grade}}">{{item.grade}}</text>
+          </view>
+        </view>
+        <view class="current-badge" wx:if="{{item.id === currentChildId}}">当前</view>
+      </view>
+      <view class="child-actions">
+        <view class="btn-action" data-id="{{item.id}}" bindtap="goEdit">编辑</view>
+        <view class="btn-action btn-danger" data-id="{{item.id}}" bindtap="onDelete">删除</view>
+      </view>
+    </view>
+
+    <view class="btn-add" bindtap="goAdd">+ 添加孩子</view>
+  </block>
+</view>

@@ -1,0 +1,56 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/tasks/today/index",
+    "pages/reward/index/index",
+    "pages/profile/index",
+    "pages/homework/create/index",
+    "pages/tasks/submit/index",
+    "pages/child/list/index",
+    "pages/child/edit/index",
+    "pages/homework/detail/index",
+    "pages/report/weekly/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "作业小卫士",
+    "navigationBarBackgroundColor": "#4F6EF7",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F5F6FA",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#4F6EF7",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "assets/icons/home.png",
+        "selectedIconPath": "assets/icons/home_active.png"
+      },
+      {
+        "pagePath": "pages/tasks/today/index",
+        "text": "任务",
+        "iconPath": "assets/icons/task.png",
+        "selectedIconPath": "assets/icons/task_active.png"
+      },
+      {
+        "pagePath": "pages/reward/index/index",
+        "text": "奖励",
+        "iconPath": "assets/icons/reward.png",
+        "selectedIconPath": "assets/icons/reward_active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "assets/icons/user.png",
+        "selectedIconPath": "assets/icons/user_active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

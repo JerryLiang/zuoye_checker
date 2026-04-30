@@ -1,0 +1,3 @@
+.page { padding: 24rpx; }
+.card { background: #fff; border-radius: 16rpx; padding: 24rpx; }
+input,.picker { border: 1rpx solid #eee; border-radius: 12rpx; padding: 18rpx; margin-bottom: 16rpx; }

@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="card">
+    <input placeholder="孩子姓名" bindinput="onNameInput" />
+    <picker mode="selector" range="{{['3-6','7-9','10-12']}}" bindchange="onAgeChange">
+      <view class="picker">年龄段：{{ageGroup}}</view>
+    </picker>
+    <input placeholder="年级（可选）" bindinput="onGradeInput" />
+    <button type="primary" bindtap="onSubmit">保存</button>
+  </view>
+</view>

@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="card">
+    <!-- 科目选择 -->
+    <view class="form-group">
+      <text class="form-label">科目</text>
+      <picker mode="selector" range="{{subjects}}" value="{{subjectIndex}}" bindchange="onSubjectChange">
+        <view class="picker-field">{{subject}} ▾</view>
+      </picker>
+    </view>
+
+    <!-- 日期选择 -->
+    <view class="form-group">
+      <text class="form-label">作业日期</text>
+      <picker mode="date" value="{{batchDate}}" bindchange="onDateChange">
+        <view class="picker-field">{{batchDate}} ▾</view>
+      </picker>
+    </view>
+
+    <!-- 作业内容 -->
+    <view class="form-group">
+      <text class="form-label">作业内容</text>
+      <textarea
+        class="textarea-field"
+        placeholder="请输入作业内容，每行一个任务&#10;例如：&#10;语文练习册第12页&#10;抄写生词表第五课&#10;背诵古诗《静夜思》"
+        bindinput="onTextInput"
+        maxlength="-1"
+        value="{{rawText}}"
+      ></textarea>
+      <text class="form-hint">提示：每行会自动生成一个独立任务</text>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="btn-primary" bindtap="onSubmit">
+      <text>{{submitting ? '提交中...' : '生成任务'}}</text>
+    </view>
+  </view>
+</view>
