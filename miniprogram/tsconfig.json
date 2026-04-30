@@ -12,7 +12,7 @@
       "@/*": ["./*"]
     },
     "lib": ["ES2020"],
-    "types": []
+    "types": ["miniprogram-api-typings"]
   },
   "include": [
     "**/*.ts"
