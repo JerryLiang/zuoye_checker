@@ -42,12 +42,14 @@
     "compileWorklet": false,
     "localPlugins": false,
     "disableUseStrict": false,
-    "useCompilerPlugins": ["typescript"],
+    "useCompilerPlugins": [
+      "typescript"
+    ],
     "swc": false,
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.7.5",
+  "libVersion": "3.15.2",
   "appid": "wxa64b538d6cf7b0e8",
   "projectname": "zuoye-checker",
   "condition": {},
