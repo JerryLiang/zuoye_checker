@@ -14,7 +14,7 @@
       <view class="batch-progress" wx:if="{{totalCount > 0}}">
         <view class="progress-info">
           <text class="progress-text">完成进度 {{doneCount}}/{{totalCount}}</text>
-          <text class="progress-pct">{{totalCount > 0 ? (doneCount / totalCount * 100).toFixed(0) : 0}}%</text>
+          <text class="progress-pct">{{progressPct}}%</text>
         </view>
         <view class="progress-bar">
           <view class="progress-fill" style="width: {{totalCount > 0 ? (doneCount / totalCount * 100) : 0}}%"></view>

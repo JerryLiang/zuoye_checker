@@ -9,6 +9,7 @@ Page({
         batchId: 0,
         doneCount: 0,
         totalCount: 0,
+        progressPct: 0,
     },
     onLoad(options) {
         if (options.id) {
@@ -23,7 +24,9 @@ Page({
             const batch = res.data;
             const tasks = batch.tasks || [];
             const doneCount = tasks.filter((t) => t.status === 2).length;
-            this.setData({ batch, tasks, doneCount, totalCount: tasks.length });
+            const totalCount = tasks.length;
+            const progressPct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
+            this.setData({ batch, tasks, doneCount, totalCount, progressPct });
         }
         catch (_e) {
             wx.showToast({ title: '加载失败', icon: 'none' });
