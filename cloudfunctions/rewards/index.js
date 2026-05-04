@@ -77,6 +77,8 @@ async function getOverview(userId, data) {
     code: 0,
     message: 'ok',
     data: {
+      account,
+      records: recordsRes.data,
       total_points: account.total_points,
       streak_days: account.streak_days,
       today_completion: todayCompletion,

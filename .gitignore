@@ -31,6 +31,11 @@ backend/composer.lock
 # Miniprogram
 miniprogram/node_modules/
 miniprogram/.miniprogram_npm/
+project.private.config.json
+miniprogram/project.private.config.json
+
+# Cloud functions dependencies
+cloudfunctions/**/node_modules/
 
 # Database (dev only)
 backend/database/database.sqlite

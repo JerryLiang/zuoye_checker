@@ -26,7 +26,7 @@ Page({
   },
 
   onDateChange(e: WechatMiniprogram.PickerChange) {
-    this.setData({ batchDate: e.detail.value });
+    this.setData({ batchDate: e.detail.value as string });
   },
 
   async onSubmit() {

@@ -22,7 +22,11 @@ async function callReports(action: string, data: any = {}) {
     name: 'reports',
     data: { action, ...data },
   });
-  return res.result as { code: number; message: string; data: any };
+  const result = res.result as { code: number; message: string; data: any };
+  if (result.code !== 0) {
+    throw new Error(result.message || '请求失败');
+  }
+  return result;
 }
 
 export const reportApi = {

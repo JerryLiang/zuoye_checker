@@ -1,10 +1,12 @@
 const cloud = require('wx-server-sdk');
+const crypto = require('crypto');
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 
 exports.main = async (event, context) => {
-  const { code, nickname, avatar_url } = event;
+  const { nickname, avatar_url } = event;
   const wxContext = cloud.getWXContext();
   const openid = wxContext.OPENID;
 
@@ -13,26 +15,25 @@ exports.main = async (event, context) => {
   }
 
   try {
-    // 查找或创建用户
+    const token = generateToken();
     const userRes = await db.collection('users').where({ openid }).get();
     let user;
 
     if (userRes.data.length > 0) {
-      // 更新用户信息
       user = userRes.data[0];
       await db.collection('users').doc(user._id).update({
         data: {
-          nickname: nickname || user.nickname,
-          avatar_url: avatar_url || user.avatar_url,
+          nickname: nickname || user.nickname || null,
+          avatar_url: avatar_url || user.avatar_url || null,
           status: 1,
-          api_token: generateToken(),
+          api_token: token,
           updated_at: db.serverDate(),
         },
       });
-      user.api_token = generateToken();
+      user.api_token = token;
+      user.nickname = nickname || user.nickname || null;
+      user.avatar_url = avatar_url || user.avatar_url || null;
     } else {
-      // 创建新用户
-      const token = generateToken();
       const now = db.serverDate();
       const res = await db.collection('users').add({
         data: {
@@ -73,10 +74,5 @@ exports.main = async (event, context) => {
 };
 
 function generateToken() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  for (let i = 0; i < 60; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  return crypto.randomBytes(32).toString('hex');
 }

@@ -11,12 +11,17 @@ Page({
     const app = getApp<IAppOption>();
     if (!app.globalData.currentChildId) return;
 
-    const res = await rewardApi.overview(app.globalData.currentChildId);
-    this.setData({
-      totalPoints: res.data.account?.total_points || 0,
-      streakDays: res.data.account?.streak_days || 0,
-      records: res.data.records || [],
-    });
+    try {
+      const res = await rewardApi.overview(app.globalData.currentChildId);
+      const account = res.data.account || res.data;
+      this.setData({
+        totalPoints: account?.total_points || 0,
+        streakDays: account?.streak_days || 0,
+        records: res.data.records || res.data.recent_records || [],
+      });
+    } catch (err: any) {
+      wx.showToast({ title: err.message || '积分加载失败', icon: 'none' });
+    }
   },
 });
 

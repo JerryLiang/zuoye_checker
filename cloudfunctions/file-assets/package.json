@@ -1,0 +1,9 @@
+{
+  "name": "file-assets",
+  "version": "1.0.0",
+  "description": "File asset metadata cloud function",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

@@ -23,6 +23,10 @@ export const authApi = {
       },
     });
 
-    return res.result as { code: number; message: string; data: { token: string; user: { id: string } } };
+    const result = res.result as { code: number; message: string; data: { token: string; user: { id: string } } };
+    if (result.code !== 0) {
+      throw new Error(result.message || '登录失败');
+    }
+    return result;
   },
 };

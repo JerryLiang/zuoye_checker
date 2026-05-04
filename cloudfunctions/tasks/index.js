@@ -51,7 +51,7 @@ async function getTodayTasks(userId, data) {
 
   // 获取该日期的作业批次
   const batchRes = await db.collection('homework_batches')
-    .where({ child_id, batch_date: targetDate })
+    .where({ user_id: userId, child_id, batch_date: targetDate })
     .get();
 
   if (batchRes.data.length === 0) {
@@ -86,9 +86,9 @@ async function submitTask(userId, taskId, data) {
     return { code: 404, message: '孩子不存在', data: null };
   }
 
-  // 获取任务
+  // 获取任务并验证任务归属
   const taskRes = await db.collection('task_items')
-    .where({ _id: taskId })
+    .where({ _id: taskId, child_id })
     .get();
 
   if (taskRes.data.length === 0) {
@@ -97,9 +97,17 @@ async function submitTask(userId, taskId, data) {
 
   const task = taskRes.data[0];
 
-  // 验证任务归属
-  if (task.child_id !== child_id) {
-    return { code: 403, message: '任务归属不匹配', data: null };
+  if (task.batch_id) {
+    const batchRes = await db.collection('homework_batches')
+      .where({ _id: task.batch_id, user_id: userId, child_id })
+      .get();
+    if (batchRes.data.length === 0) {
+      return { code: 403, message: '任务归属不匹配', data: null };
+    }
+  }
+
+  if (task.status === 2) {
+    return { code: 409, message: '任务已完成，不能重复提交', data: null };
   }
 
   const now = db.serverDate();
@@ -115,9 +123,6 @@ async function submitTask(userId, taskId, data) {
     created_at: now,
   };
 
-  const submissionRes = await db.collection('task_submissions').add({ data: submissionData });
-  const submissionId = submissionRes._id;
-
   // 简单的批改逻辑
   let score = 0;
   let isPassed = 0;
@@ -131,6 +136,20 @@ async function submitTask(userId, taskId, data) {
   } else {
     score = 40;
   }
+
+  // 通过任务先做带条件的状态抢占，只有一个并发请求能从未完成切到已完成。
+  if (isPassed) {
+    const claimRes = await db.collection('task_items')
+      .where({ _id: taskId, child_id, status: _.neq(2) })
+      .update({ data: { status: 2, updated_at: now } });
+
+    if (claimRes.stats.updated === 0) {
+      return { code: 409, message: '任务已完成，不能重复提交', data: null };
+    }
+  }
+
+  const submissionRes = await db.collection('task_submissions').add({ data: submissionData });
+  const submissionId = submissionRes._id;
 
   // 创建批改结果
   const checkData = {
@@ -147,43 +166,50 @@ async function submitTask(userId, taskId, data) {
 
   const checkRes = await db.collection('check_results').add({ data: checkData });
 
-  // 如果通过，更新任务状态并添加奖励
+  // 如果通过，添加奖励
   if (isPassed) {
-    // 更新任务状态
-    await db.collection('task_items').doc(taskId).update({
-      data: { status: 2, updated_at: now },
-    });
+    // 添加积分奖励，按 source_type + source_id 做幂等，避免重复刷积分。
+    const existingRewardRes = await db.collection('reward_records')
+      .where({ child_id, source_type: 'task_complete', source_id: taskId })
+      .limit(1)
+      .get();
 
-    // 添加积分奖励
-    await db.collection('reward_accounts').where({ child_id }).update({
-      data: {
-        total_points: _.inc(2),
-        updated_at: now,
-      },
-    }).catch(() => {
-      // 如果不存在，创建新的
-      db.collection('reward_accounts').add({
+    if (existingRewardRes.data.length === 0) {
+      const accountRes = await db.collection('reward_accounts')
+        .where({ child_id })
+        .get();
+
+      if (accountRes.data.length > 0) {
+        await db.collection('reward_accounts').doc(accountRes.data[0]._id).update({
+          data: {
+            total_points: _.inc(2),
+            updated_at: now,
+          },
+        });
+      } else {
+        await db.collection('reward_accounts').add({
+          data: {
+            child_id,
+            total_points: 2,
+            streak_days: 0,
+            created_at: now,
+            updated_at: now,
+          },
+        });
+      }
+
+      // 记录奖励
+      await db.collection('reward_records').add({
         data: {
           child_id,
-          total_points: 2,
-          streak_days: 0,
+          source_type: 'task_complete',
+          source_id: taskId,
+          points: 2,
+          description: '完成任务奖励积分',
           created_at: now,
-          updated_at: now,
         },
       });
-    });
-
-    // 记录奖励
-    await db.collection('reward_records').add({
-      data: {
-        child_id,
-        source_type: 'task_complete',
-        source_id: taskId,
-        points: 2,
-        description: '完成任务奖励积分',
-        created_at: now,
-      },
-    });
+    }
 
     // 更新每日完成情况
     if (task.batch_id) {
@@ -192,39 +218,42 @@ async function submitTask(userId, taskId, data) {
         const batchDate = batchRes.data.batch_date;
 
         const allCount = await db.collection('task_items')
-          .where({ batch_id: task.batch_id })
+          .where({ batch_id: task.batch_id, child_id })
           .count();
 
         const doneCount = await db.collection('task_items')
-          .where({ batch_id: task.batch_id, status: 2 })
+          .where({ batch_id: task.batch_id, child_id, status: 2 })
           .count();
 
         const totalCount = allCount.total;
         const completedCount = doneCount.total;
 
-        await db.collection('daily_completions').where({
+        const completionData = {
+          total_tasks: totalCount,
+          completed_tasks: completedCount,
+          is_all_completed: totalCount > 0 && totalCount === completedCount ? 1 : 0,
+          updated_at: now,
+        };
+
+        const completionRes = await db.collection('daily_completions').where({
           child_id,
           completion_date: batchDate,
-        }).update({
-          data: {
-            total_tasks: totalCount,
-            completed_tasks: completedCount,
-            is_all_completed: totalCount > 0 && totalCount === completedCount ? 1 : 0,
-            updated_at: now,
-          },
-        }).catch(() => {
-          db.collection('daily_completions').add({
+        }).get();
+
+        if (completionRes.data.length > 0) {
+          await db.collection('daily_completions').doc(completionRes.data[0]._id).update({
+            data: completionData,
+          });
+        } else {
+          await db.collection('daily_completions').add({
             data: {
               child_id,
               completion_date: batchDate,
-              total_tasks: totalCount,
-              completed_tasks: completedCount,
-              is_all_completed: totalCount > 0 && totalCount === completedCount ? 1 : 0,
+              ...completionData,
               created_at: now,
-              updated_at: now,
             },
           });
-        });
+        }
       }
     }
   }

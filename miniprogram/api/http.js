@@ -1,54 +1,47 @@
-async function callCloud(name, data) {
-  if (!data) data = {};
-  try {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.http = void 0;
+async function callCloud(name, data = {}) {
     const res = await wx.cloud.callFunction({
-      name,
-      data,
+        name,
+        data,
     });
-    return res.result;
-  } catch (err) {
-    return {
-      code: 500,
-      message: (err && err.message) || '云函数调用失败',
-      data: null,
-    };
-  }
-}
-
-const http = {
-  get(path, data) {
-    var parts = path.split('/').filter(Boolean);
-    var resource = parts[0];
-    var actionName = parts[1] || 'list';
-    return callCloud(resource, { action: actionName, data: data, id: actionName && !isNaN(Number(actionName)) ? actionName : undefined });
-  },
-
-  post(path, data) {
-    var parts = path.split('/').filter(Boolean);
-    var funcName = parts[0];
-
-    // 特殊处理提交任务
-    if (funcName === 'tasks' && parts.length >= 3 && parts[2] === 'submit') {
-      return callCloud(funcName, { action: 'submit', id: parts[1], data: data });
+    const result = res.result;
+    if (result.code !== 0) {
+        throw new Error(result.message || '请求失败');
     }
-
-    return callCloud(funcName, { action: 'create', data: data });
-  },
-
-  put(path, data) {
-    var parts = path.split('/').filter(Boolean);
-    return callCloud(parts[0], { action: 'update', id: parts[1], data: data });
-  },
-
-  patch(path, data) {
-    var parts = path.split('/').filter(Boolean);
-    return callCloud(parts[0], { action: 'update', id: parts[1], data: data });
-  },
-
-  del(path, data) {
-    var parts = path.split('/').filter(Boolean);
-    return callCloud(parts[0], { action: 'delete', id: parts[1], data: data });
-  },
+    return result;
+}
+exports.http = {
+    // 兼容旧接口，实际调用云函数
+    get: (path, data) => {
+        const [resource, action] = path.split('/').filter(Boolean);
+        const funcName = resource;
+        const actionName = action || 'list';
+        return callCloud(funcName, { action: actionName, data, id: action && !isNaN(Number(action)) ? action : undefined });
+    },
+    post: (path, data) => {
+        const parts = path.split('/').filter(Boolean);
+        const funcName = parts[0];
+        // 特殊处理提交任务
+        if (funcName === 'tasks' && parts.length >= 3 && parts[2] === 'submit') {
+            return callCloud(funcName, { action: 'submit', id: parts[1], data });
+        }
+        return callCloud(funcName, { action: 'create', data });
+    },
+    put: (path, data) => {
+        const parts = path.split('/').filter(Boolean);
+        const funcName = parts[0];
+        return callCloud(funcName, { action: 'update', id: parts[1], data });
+    },
+    patch: (path, data) => {
+        const parts = path.split('/').filter(Boolean);
+        const funcName = parts[0];
+        return callCloud(funcName, { action: 'update', id: parts[1], data });
+    },
+    del: (path, data) => {
+        const parts = path.split('/').filter(Boolean);
+        const funcName = parts[0];
+        return callCloud(funcName, { action: 'delete', id: parts[1], data });
+    },
 };
-
-module.exports = { http };

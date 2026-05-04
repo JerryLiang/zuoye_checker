@@ -7,19 +7,15 @@ interface ApiResponse<T = any> {
 }
 
 async function callCloud<T = any>(name: string, data: Record<string, any> = {}): Promise<ApiResponse<T>> {
-  try {
-    const res = await wx.cloud.callFunction({
-      name,
-      data,
-    });
-    return res.result as ApiResponse<T>;
-  } catch (err: any) {
-    return {
-      code: 500,
-      message: err.message || '云函数调用失败',
-      data: null as any,
-    };
+  const res = await wx.cloud.callFunction({
+    name,
+    data,
+  });
+  const result = res.result as ApiResponse<T>;
+  if (result.code !== 0) {
+    throw new Error(result.message || '请求失败');
   }
+  return result;
 }
 
 export const http = {

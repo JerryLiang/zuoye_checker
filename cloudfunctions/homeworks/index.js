@@ -62,7 +62,7 @@ async function getHomework(userId, id) {
 
   const batch = res.data[0];
 
-  // 获取关联的任务
+  // 获取关联的任务。先校验批次归属，再按 batch_id 查询，避免越权读取。
   const tasksRes = await db.collection('task_items')
     .where({ batch_id: id })
     .orderBy('sort_order', 'asc')
@@ -74,7 +74,7 @@ async function getHomework(userId, id) {
   // 获取每个任务的提交记录
   for (let i = 0; i < tasks.length; i++) {
     const submissionRes = await db.collection('task_submissions')
-      .where({ task_id: tasks[i]._id })
+      .where({ task_id: tasks[i]._id, child_id: batch.child_id })
       .orderBy('submitted_at', 'desc')
       .limit(1)
       .get();
@@ -84,7 +84,7 @@ async function getHomework(userId, id) {
 
       // 获取批改结果
       const checkRes = await db.collection('check_results')
-        .where({ submission_id: tasks[i].submission._id })
+        .where({ submission_id: tasks[i].submission._id, task_id: tasks[i]._id })
         .limit(1)
         .get();
 
@@ -101,6 +101,19 @@ async function getHomework(userId, id) {
 
 async function createHomework(userId, data) {
   const now = db.serverDate();
+
+  if (!data || !data.child_id || !data.batch_date) {
+    return { code: 400, message: '缺少必要参数', data: null };
+  }
+
+  // 验证孩子归属，防止给别人的 child_id 创建作业。
+  const childRes = await db.collection('children')
+    .where({ _id: data.child_id, user_id: userId })
+    .get();
+
+  if (childRes.data.length === 0) {
+    return { code: 404, message: '孩子不存在', data: null };
+  }
 
   // 创建作业批次
   const batchData = {
@@ -134,6 +147,7 @@ async function createHomework(userId, data) {
     const title = segments[i].trim().substring(0, 255);
     const taskData = {
       batch_id: batchId,
+      user_id: userId,
       child_id: data.child_id,
       title,
       task_type: 'other',
@@ -177,17 +191,27 @@ async function updateHomework(userId, id, data) {
 }
 
 async function deleteHomework(userId, id) {
-  // 先删除关联的任务
-  await db.collection('task_items').where({ batch_id: id }).remove();
-
-  // 删除作业批次
-  const res = await db.collection('homework_batches')
+  const batchRes = await db.collection('homework_batches')
     .where({ _id: id, user_id: userId })
-    .remove();
+    .get();
 
-  if (res.stats.removed === 0) {
+  if (batchRes.data.length === 0) {
     return { code: 404, message: '作业不存在', data: null };
   }
+
+  const batch = batchRes.data[0];
+  const tasksRes = await db.collection('task_items')
+    .where({ batch_id: id, child_id: batch.child_id })
+    .get();
+  const taskIds = tasksRes.data.map(task => task._id);
+
+  if (taskIds.length > 0) {
+    await db.collection('check_results').where({ task_id: _.in(taskIds) }).remove();
+    await db.collection('task_submissions').where({ task_id: _.in(taskIds), child_id: batch.child_id }).remove();
+    await db.collection('task_items').where({ batch_id: id, child_id: batch.child_id }).remove();
+  }
+
+  await db.collection('homework_batches').doc(batch._id).remove();
 
   return { code: 0, message: 'deleted', data: null };
 }

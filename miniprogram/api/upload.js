@@ -1,31 +1,39 @@
-const uploadApi = {
-  async upload(filePath, bizType, childId) {
-    // 上传文件到云存储
-    const timestamp = Date.now();
-    const ext = filePath.split('.').pop() || 'jpg';
-    const cloudPath = 'uploads/' + bizType + '/' + timestamp + '.' + ext;
-
-    const uploadRes = await wx.cloud.uploadFile({
-      cloudPath,
-      filePath,
-    });
-
-    // 保存文件记录到数据库
-    const db = wx.cloud.database();
-    const res = await db.collection('file_assets').add({
-      data: {
-        fileID: uploadRes.fileID,
-        biz_type: bizType,
-        child_id: childId || null,
-        created_at: db.serverDate(),
-      },
-    });
-
-    return {
-      _id: res._id,
-      fileID: uploadRes.fileID,
-    };
-  },
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.uploadApi = void 0;
+const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+exports.uploadApi = {
+    async upload(filePath, bizType, childId) {
+        if (!childId) {
+            throw new Error('缺少孩子信息');
+        }
+        const timestamp = Date.now();
+        const ext = (filePath.split('.').pop() || 'jpg').toLowerCase();
+        if (!ALLOWED_EXTS.includes(ext)) {
+            throw new Error('文件类型不支持');
+        }
+        const cloudPath = `uploads/${bizType}/${childId}/${timestamp}.${ext}`;
+        const uploadRes = await wx.cloud.uploadFile({
+            cloudPath,
+            filePath,
+        });
+        const assetRes = await wx.cloud.callFunction({
+            name: 'file-assets',
+            data: {
+                action: 'create',
+                data: {
+                    fileID: uploadRes.fileID,
+                    biz_type: bizType,
+                    child_id: childId,
+                    file_name: filePath.split('/').pop() || null,
+                    file_ext: ext,
+                },
+            },
+        });
+        const result = assetRes.result;
+        if (result.code !== 0) {
+            throw new Error(result.message || '文件记录保存失败');
+        }
+        return result.data;
+    },
 };
-
-module.exports = { uploadApi };
