@@ -1,66 +1,90 @@
-// pages/report/weekly/index.js
+const { reportApi } = require('../../../api/report');
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    report: null,
+    loading: true,
+    weekLabel: '',
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
   onShow() {
-
+    this.loadReport();
   },
 
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
+  async loadReport() {
+    var app = getApp();
+    var childId = app.globalData.currentChildId;
+    if (!childId) {
+      this.setData({ loading: false });
+      return;
+    }
 
+    try {
+      this.setData({ loading: true });
+      var res = await reportApi.weekly(childId);
+      var report = res.data;
+      var weekLabel = report.week_start + ' ~ ' + report.week_end;
+      this.setData({ report: report, weekLabel: weekLabel });
+    } catch (_e) {
+      wx.showToast({ title: '加载失败', icon: 'none' });
+    } finally {
+      this.setData({ loading: false });
+    }
   },
 
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
+  onPrevWeek() {
+    var app = getApp();
+    var childId = app.globalData.currentChildId;
+    if (!childId || !this.data.report) return;
 
+    var prevStart = this.getPrevWeekStart(this.data.report.week_start);
+    this.fetchWeek(childId, prevStart);
   },
 
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
+  onNextWeek() {
+    var app = getApp();
+    var childId = app.globalData.currentChildId;
+    if (!childId || !this.data.report) return;
 
+    var nextStart = this.getNextWeekStart(this.data.report.week_start);
+    this.fetchWeek(childId, nextStart);
   },
 
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
+  async fetchWeek(childId, startDate) {
+    try {
+      this.setData({ loading: true });
+      var res = await reportApi.weekly(childId, startDate);
+      var report = res.data;
+      var weekLabel = report.week_start + ' ~ ' + report.week_end;
+      this.setData({ report: report, weekLabel: weekLabel });
+    } catch (_e) {
+      wx.showToast({ title: '加载失败', icon: 'none' });
+    } finally {
+      this.setData({ loading: false });
+    }
   },
 
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
+  getPrevWeekStart(currentStart) {
+    var d = new Date(currentStart);
+    d.setDate(d.getDate() - 7);
+    return this.formatDate(d);
+  },
 
-  }
-})
+  getNextWeekStart(currentStart) {
+    var d = new Date(currentStart);
+    d.setDate(d.getDate() + 7);
+    return this.formatDate(d);
+  },
+
+  formatDate(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  },
+
+  async onRefresh() {
+    await this.loadReport();
+    wx.showToast({ title: '已刷新', icon: 'success' });
+  },
+});

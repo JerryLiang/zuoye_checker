@@ -1,66 +1,57 @@
-// pages/tasks/today/index.js
+const { taskApi } = require('../../../api/task');
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    tasks: [],
+    totalTasks: 0,
+    doneTasks: 0,
+    loading: false,
+    currentDate: '',
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
-
+  onLoad() {
+    var now = new Date();
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+    var weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+    var weekDay = weekDays[now.getDay()];
+    this.setData({
+      currentDate: month + '月' + day + '日 星期' + weekDay,
+    });
   },
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
+  async onShow() {
+    await this.loadTasks();
   },
 
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
+  async loadTasks() {
+    var app = getApp();
+    var childId = app.globalData.currentChildId;
+    if (!childId) {
+      this.setData({ tasks: [], totalTasks: 0, doneTasks: 0 });
+      return;
+    }
 
+    try {
+      this.setData({ loading: true });
+      var res = await taskApi.today(childId);
+      var tasks = res.data || [];
+      var done = tasks.filter(function (t) { return t.status === 2; }).length;
+      this.setData({ tasks: tasks, totalTasks: tasks.length, doneTasks: done });
+    } catch (_e) {
+      wx.showToast({ title: '加载失败', icon: 'none' });
+    } finally {
+      this.setData({ loading: false });
+    }
   },
 
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
+  goSubmit(e) {
+    var id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: '/pages/tasks/submit/index?taskId=' + id });
   },
 
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
+  async onRefresh() {
+    await this.loadTasks();
+    wx.showToast({ title: '已刷新', icon: 'success' });
   },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
-  }
-})
+});

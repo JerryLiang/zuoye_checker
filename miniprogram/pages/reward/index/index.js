@@ -1,66 +1,21 @@
-// pages/reward/index/index.js
+const { rewardApi } = require('../../../api/reward');
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    totalPoints: 0,
+    streakDays: 0,
+    records: [],
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
+  async onShow() {
+    var app = getApp();
+    if (!app.globalData.currentChildId) return;
 
+    var res = await rewardApi.overview(app.globalData.currentChildId);
+    this.setData({
+      totalPoints: (res.data.account && res.data.account.total_points) || 0,
+      streakDays: (res.data.account && res.data.account.streak_days) || 0,
+      records: res.data.records || [],
+    });
   },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
-  },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
-  }
-})
+});

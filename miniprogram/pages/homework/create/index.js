@@ -1,66 +1,64 @@
-// pages/homework/create/index.js
+const { homeworkApi } = require('../../../api/homework');
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    subject: '语文',
+    subjects: ['语文', '数学', '英语', '科学', '其他'],
+    subjectIndex: 0,
+    rawText: '',
+    batchDate: '',
+    submitting: false,
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
-
+  onLoad() {
+    var now = new Date();
+    var date = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    this.setData({ batchDate: date });
   },
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
+  onSubjectChange(e) {
+    var idx = Number(e.detail.value);
+    this.setData({ subjectIndex: idx, subject: this.data.subjects[idx] });
   },
 
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
+  onTextInput(e) {
+    this.setData({ rawText: e.detail.value });
   },
 
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
+  onDateChange(e) {
+    this.setData({ batchDate: e.detail.value });
   },
 
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
+  async onSubmit() {
+    var app = getApp();
+    if (!app.globalData.currentChildId) {
+      wx.showToast({ title: '请先在首页选择孩子', icon: 'none' });
+      return;
+    }
 
+    if (!this.data.rawText.trim()) {
+      wx.showToast({ title: '请输入作业内容', icon: 'none' });
+      return;
+    }
+
+    try {
+      this.setData({ submitting: true });
+      await homeworkApi.create({
+        child_id: app.globalData.currentChildId,
+        subject: this.data.subject,
+        input_source: 1,
+        raw_text: this.data.rawText,
+        batch_date: this.data.batchDate,
+      });
+
+      wx.showToast({ title: '作业已创建', icon: 'success' });
+      setTimeout(function () {
+        wx.switchTab({ url: '/pages/tasks/today/index' });
+      }, 800);
+    } catch (_e) {
+      wx.showToast({ title: '创建失败，请重试', icon: 'none' });
+    } finally {
+      this.setData({ submitting: false });
+    }
   },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
-  }
-})
+});
