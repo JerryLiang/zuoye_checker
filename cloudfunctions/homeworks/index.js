@@ -256,6 +256,7 @@ function normalizeTaskItems(data = {}) {
 }
 
 async function recognizeHomeworkImage(userId, data = {}) {
+  const debugLogs = [];
   if (!data.file_asset_id) {
     return { code: 400, message: '缺少file_asset_id', data: null };
   }
@@ -271,14 +272,14 @@ async function recognizeHomeworkImage(userId, data = {}) {
 
   const asset = assetRes.data[0];
   if (!HOMEWORK_AI_MODEL || !HOMEWORK_AI_API_KEY) {
-    return buildRecognitionFallback('ai_not_configured');
+    return buildRecognitionFallback('ai_not_configured', null, debugLogs);
   }
 
   try {
     const downloadRes = await cloud.downloadFile({ fileID: asset.fileID });
     const imageBuffer = downloadRes.fileContent;
     const mimeType = getImageMimeType(asset.file_ext);
-    const recognition = await callVisionModel({ imageBuffer, mimeType });
+    const recognition = await callVisionModel({ imageBuffer, mimeType, debugLogs });
 
     return {
       code: 0,
@@ -292,12 +293,12 @@ async function recognizeHomeworkImage(userId, data = {}) {
       responseBody: err && err.responseBody,
       baseUrl: HOMEWORK_AI_BASE_URL,
       model: HOMEWORK_AI_MODEL,
-    });
-    return buildRecognitionFallback('ai_recognition_failed', err && err.message);
+    }, debugLogs);
+    return buildRecognitionFallback('ai_recognition_failed', err && err.message, debugLogs);
   }
 }
 
-function buildRecognitionFallback(reason, detail) {
+function buildRecognitionFallback(reason, detail, debugLogs = []) {
   const message = reason === 'ai_not_configured'
     ? 'AI模型未配置'
     : `AI识别失败${detail ? `：${String(detail).slice(0, 80)}` : '，请稍后重试'}`;
@@ -311,6 +312,7 @@ function buildRecognitionFallback(reason, detail) {
       recognized_items: [],
       confidence: 0,
       provider_message: message,
+      debug_logs: debugLogs,
     },
   };
 }
@@ -323,7 +325,7 @@ function getImageMimeType(fileExt = '') {
   return 'image/jpeg';
 }
 
-async function callVisionModel({ imageBuffer, mimeType }) {
+async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/chat/completions`;
   const imageBase64 = Buffer.from(imageBuffer).toString('base64');
@@ -360,9 +362,9 @@ async function callVisionModel({ imageBuffer, mimeType }) {
     imageFormat: imageContentPart.type,
     messageCount: payload.messages.length,
     responseFormat: payload.response_format,
-  });
+  }, debugLogs);
 
-  const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY);
+  const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY, debugLogs);
   const message = res && res.choices && res.choices[0] ? res.choices[0].message : null;
   const content = extractMessageContent(message);
   logAiDebug('message', {
@@ -371,9 +373,9 @@ async function callVisionModel({ imageBuffer, mimeType }) {
     finishReason: res && res.choices && res.choices[0] ? res.choices[0].finish_reason : undefined,
     usage: res && res.usage,
     contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
-  });
+  }, debugLogs);
   const parsed = parseModelJson(content);
-  logAiDebug('parsed', parsed);
+  logAiDebug('parsed', parsed, debugLogs);
   return parsed;
 }
 
@@ -397,7 +399,11 @@ function buildImageContentPart({ baseUrl, imageBase64, mimeType }) {
   };
 }
 
-function logAiDebug(stage, data) {
+function logAiDebug(stage, data, debugLogs) {
+  const entry = { stage, data };
+  if (Array.isArray(debugLogs)) {
+    debugLogs.push(entry);
+  }
   try {
     console.error(`[homeworks.ai.${stage}] ${JSON.stringify(data)}`);
   } catch (_err) {
@@ -424,7 +430,7 @@ function extractMessageContent(message) {
   return '';
 }
 
-function postJson(url, payload, apiKey) {
+function postJson(url, payload, apiKey, debugLogs) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const body = JSON.stringify(payload);
@@ -448,7 +454,7 @@ function postJson(url, payload, apiKey) {
           statusCode: res.statusCode,
           bodyLength: text.length,
           bodyPreview: text.slice(0, 3000),
-        });
+        }, debugLogs);
         if (res.statusCode < 200 || res.statusCode >= 300) {
           const error = new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`);
           error.statusCode = res.statusCode;
