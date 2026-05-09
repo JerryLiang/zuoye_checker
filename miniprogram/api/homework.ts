@@ -42,6 +42,14 @@ async function callHomeworks(action: string, data: any = {}) {
   return result;
 }
 
+export interface HomeworkRecognitionResult {
+  subject?: string;
+  batch_date?: string;
+  raw_text?: string;
+  confidence?: number;
+  provider_message?: string;
+}
+
 export const homeworkApi = {
   list(child_id?: string) {
     return callHomeworks('list', { data: child_id ? { child_id } : {} });
@@ -55,8 +63,13 @@ export const homeworkApi = {
     input_source: 1 | 2 | 3 | 4;
     raw_text?: string;
     batch_date: string;
+    file_asset_id?: string;
+    check_answers?: string;
   }) {
     return callHomeworks('create', { data: payload });
+  },
+  recognizeImage(file_asset_id: string) {
+    return callHomeworks('recognize_image', { data: { file_asset_id } }) as Promise<{ code: number; message: string; data: HomeworkRecognitionResult }>;
   },
   update(id: string, payload: Partial<Pick<HomeworkBatch, 'subject' | 'raw_text' | 'status'>>) {
     return callHomeworks('update', { id, data: payload });

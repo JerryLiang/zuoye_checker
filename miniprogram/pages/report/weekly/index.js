@@ -48,6 +48,15 @@ Page({
         const nextStart = this.getNextWeekStart(this.data.report.week_start);
         this.fetchWeek(childId, nextStart);
     },
+    onWeekPick(e) {
+        const app = getApp();
+        const childId = app.globalData.currentChildId;
+        if (!childId)
+            return;
+        const pickedDate = e.detail.value;
+        const weekStart = this.getWeekStart(pickedDate);
+        this.fetchWeek(childId, weekStart);
+    },
     async fetchWeek(childId, startDate) {
         try {
             this.setData({ loading: true });
@@ -71,6 +80,13 @@ Page({
     getNextWeekStart(currentStart) {
         const d = new Date(currentStart);
         d.setDate(d.getDate() + 7);
+        return this.formatDate(d);
+    },
+    getWeekStart(dateStr) {
+        const d = new Date(dateStr);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        d.setDate(diff);
         return this.formatDate(d);
     },
     formatDate(d) {

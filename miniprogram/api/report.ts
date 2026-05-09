@@ -11,9 +11,11 @@ export interface WeeklyReport {
   };
   daily_stats: Array<{
     date: string;
+    weekday: string;
     total: number;
     completed: number;
     avg_score: number;
+    points: number;
   }>;
 }
 

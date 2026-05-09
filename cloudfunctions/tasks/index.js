@@ -123,16 +123,30 @@ async function submitTask(userId, taskId, data) {
     created_at: now,
   };
 
-  // 简单的批改逻辑
+  // 批改逻辑：数学自动批改优先，其余沿用简单提交规则。
   let score = 0;
   let isPassed = 0;
+  let feedback = '再补充一点内容就更好了。';
+  const normalizedSubmitText = normalizeAnswer(submit_text || '');
+  const normalizedExpectedAnswer = normalizeAnswer(task.expected_answer || '');
 
-  if (file_asset_id) {
+  if (task.subject === '数学' && normalizedExpectedAnswer && normalizedSubmitText) {
+    if (normalizedSubmitText === normalizedExpectedAnswer) {
+      score = 100;
+      isPassed = 1;
+      feedback = '答案正确，完成得不错！';
+    } else {
+      score = 40;
+      feedback = `答案还不对，建议再检查一遍。`;
+    }
+  } else if (file_asset_id) {
     score = 85;
     isPassed = 1;
+    feedback = '完成得不错，继续加油！';
   } else if ((submit_text || '').length >= 6) {
     score = 80;
     isPassed = 1;
+    feedback = '完成得不错，继续加油！';
   } else {
     score = 40;
   }
@@ -158,8 +172,11 @@ async function submitTask(userId, taskId, data) {
     check_engine: 'rule_v1',
     is_passed: isPassed,
     score,
-    feedback: isPassed ? '完成得不错，继续加油！' : '再补充一点内容就更好了。',
-    detail_json: { rule: 'simple_v1' },
+    feedback,
+    detail_json: {
+      rule: normalizedExpectedAnswer ? 'math_exact_match_v1' : 'simple_v1',
+      expected_answer: task.subject === '数学' && normalizedExpectedAnswer ? task.expected_answer : null,
+    },
     checked_at: now,
     created_at: now,
   };
@@ -266,6 +283,13 @@ async function submitTask(userId, taskId, data) {
       check_result: { _id: checkRes._id, ...checkData },
     },
   };
+}
+
+function normalizeAnswer(value) {
+  return String(value)
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/[，。；：]/g, match => ({ '，': ',', '。': '.', '；': ';', '：': ':' }[match] || match));
 }
 
 function getTodayDate() {

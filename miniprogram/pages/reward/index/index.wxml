@@ -1,13 +1,52 @@
 <view class="page">
-  <view class="card summary">
-    <view>总积分：<text class="num">{{totalPoints}}</text></view>
-    <view>连续天数：<text class="num">{{streakDays}}</text></view>
-  </view>
+  <view wx:if="{{loading}}" class="loading-wrap">加载中...</view>
 
-  <view class="card" wx:for="{{records}}" wx:key="id">
-    <view class="row">
-      <text>{{item.description || '积分变更'}}</text>
-      <text class="plus">+{{item.points}}</text>
+  <block wx:else>
+    <view class="points-hero">
+      <view class="hero-label">当前积分</view>
+      <view class="hero-points">{{totalPoints}}</view>
+      <view class="hero-sub">完成任务持续积累，每题 +2 分</view>
     </view>
-  </view>
+
+    <view class="summary-grid">
+      <view class="summary-item">
+        <text class="summary-value">{{todayCompleted}}/{{todayTotal}}</text>
+        <text class="summary-label">今日完成</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-value">{{streakDays}}</text>
+        <text class="summary-label">连续天数</text>
+      </view>
+    </view>
+
+    <view class="exchange-card">
+      <view>
+        <view class="exchange-title">兑换奖励</view>
+        <view class="exchange-sub">未来可扩展：用积分兑换家长设置的小奖励</view>
+      </view>
+      <view class="exchange-tag">敬请期待</view>
+    </view>
+
+    <view class="section-title">积分记录</view>
+    <view wx:if="{{records.length === 0}}" class="empty-state">
+      <view class="empty-icon">⭐</view>
+      <view class="empty-text">还没有积分记录</view>
+      <view class="empty-sub">完成第一个任务后，这里会出现奖励记录</view>
+    </view>
+
+    <view wx:else class="record-list">
+      <view class="record-card" wx:for="{{records}}" wx:key="_id">
+        <view class="record-left">
+          <view class="record-dot">+</view>
+          <view>
+            <view class="record-desc">{{item.description}}</view>
+            <view class="record-time">{{item.createdText}}</view>
+          </view>
+        </view>
+        <view class="record-points">+{{item.points}}</view>
+      </view>
+    </view>
+
+    <view class="refresh-btn" bindtap="onRefresh">刷新积分</view>
+  </block>
 </view>

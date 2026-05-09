@@ -51,10 +51,22 @@
   border-radius: 50%;
 }
 
+.week-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .week-label {
   font-size: 28rpx;
   color: #333;
   font-weight: 500;
+}
+
+.week-hint {
+  margin-top: 4rpx;
+  font-size: 21rpx;
+  color: #999;
 }
 
 /* 汇总网格 */
@@ -186,6 +198,17 @@
   width: 80rpx;
   text-align: right;
   flex-shrink: 0;
+}
+
+.day-points {
+  display: inline-block;
+  margin-top: 12rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 18rpx;
+  background: #FFF4E6;
+  color: #FA8C16;
+  font-size: 22rpx;
+  font-weight: 600;
 }
 
 .day-empty {

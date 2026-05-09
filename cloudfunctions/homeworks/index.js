@@ -1,8 +1,14 @@
 const cloud = require('wx-server-sdk');
+const https = require('https');
+
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const _ = db.command;
+
+const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://api.openai.com/v1';
+const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || '';
+const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || '';
 
 exports.main = async (event, context) => {
   const { action, data, id } = event;
@@ -24,6 +30,8 @@ exports.main = async (event, context) => {
         return await getHomework(user._id, id);
       case 'create':
         return await createHomework(user._id, data);
+      case 'recognize_image':
+        return await recognizeHomeworkImage(user._id, data);
       case 'update':
         return await updateHomework(user._id, id, data);
       case 'delete':
@@ -122,6 +130,7 @@ async function createHomework(userId, data) {
     subject: data.subject || null,
     input_source: data.input_source,
     raw_text: data.raw_text || null,
+    file_asset_id: data.file_asset_id || null,
     batch_date: data.batch_date,
     status: 1,
     created_at: now,
@@ -141,19 +150,26 @@ async function createHomework(userId, data) {
     segments = ['完成老师布置的作业'];
   }
 
+  // 数学自动批改答案：每行对应一个任务，仅数学科目启用。
+  const answerSegments = data.subject === '数学' && data.check_answers
+    ? String(data.check_answers).split(/[\n\r]+/).map(s => s.trim())
+    : [];
+
   // 创建任务
   const tasks = [];
   for (let i = 0; i < segments.length; i++) {
     const title = segments[i].trim().substring(0, 255);
+    const expectedAnswer = answerSegments[i] || null;
     const taskData = {
       batch_id: batchId,
       user_id: userId,
       child_id: data.child_id,
       title,
-      task_type: 'other',
+      task_type: data.subject === '数学' && expectedAnswer ? 'math' : 'other',
       subject: data.subject || null,
+      expected_answer: expectedAnswer,
       expected_minutes: 10,
-      check_mode: 1,
+      check_mode: expectedAnswer ? 2 : 1,
       pass_score: 60,
       status: 1,
       sort_order: i,
@@ -169,6 +185,170 @@ async function createHomework(userId, data) {
     code: 0,
     message: 'created',
     data: { _id: batchId, ...batchData, tasks },
+  };
+}
+
+async function recognizeHomeworkImage(userId, data = {}) {
+  if (!data.file_asset_id) {
+    return { code: 400, message: '缺少file_asset_id', data: null };
+  }
+
+  const assetRes = await db.collection('file_assets')
+    .where({ _id: data.file_asset_id, user_id: userId })
+    .limit(1)
+    .get();
+
+  if (assetRes.data.length === 0) {
+    return { code: 404, message: '文件不存在', data: null };
+  }
+
+  const asset = assetRes.data[0];
+  if (!HOMEWORK_AI_MODEL || !HOMEWORK_AI_API_KEY) {
+    return buildRecognitionFallback('ai_not_configured');
+  }
+
+  try {
+    const downloadRes = await cloud.downloadFile({ fileID: asset.fileID });
+    const imageBuffer = downloadRes.fileContent;
+    const mimeType = getImageMimeType(asset.file_ext);
+    const recognition = await callVisionModel({ imageBuffer, mimeType });
+
+    return {
+      code: 0,
+      message: 'recognized',
+      data: normalizeRecognitionResult(recognition),
+    };
+  } catch (err) {
+    console.error('recognizeHomeworkImage failed:', err);
+    return buildRecognitionFallback('ai_recognition_failed');
+  }
+}
+
+function buildRecognitionFallback(reason) {
+  return {
+    code: 0,
+    message: reason,
+    data: {
+      subject: null,
+      batch_date: null,
+      raw_text: '',
+      confidence: 0,
+      provider_message: reason === 'ai_not_configured' ? 'AI模型未配置' : 'AI识别失败，请手动填写',
+    },
+  };
+}
+
+function getImageMimeType(fileExt = '') {
+  const ext = String(fileExt).toLowerCase();
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  if (ext === 'heic') return 'image/heic';
+  return 'image/jpeg';
+}
+
+async function callVisionModel({ imageBuffer, mimeType }) {
+  const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
+  const endpoint = `${baseUrl}/chat/completions`;
+  const imageDataUrl = `data:${mimeType};base64,${Buffer.from(imageBuffer).toString('base64')}`;
+
+  const payload = {
+    model: HOMEWORK_AI_MODEL,
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content: '你是作业图片识别助手。只输出 JSON，不要输出 Markdown。识别小学生作业图片中的科目、日期和作业内容。',
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","confidence":0到1}。如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。',
+          },
+          {
+            type: 'image_url',
+            image_url: { url: imageDataUrl },
+          },
+        ],
+      },
+    ],
+    temperature: 0.1,
+  };
+
+  const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY);
+  const content = res && res.choices && res.choices[0] && res.choices[0].message
+    ? res.choices[0].message.content
+    : '';
+  return parseModelJson(content);
+}
+
+function postJson(url, payload, apiKey) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const body = JSON.stringify(payload);
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: parsed.port || 443,
+      path: `${parsed.pathname}${parsed.search}`,
+      method: 'POST',
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        Authorization: `Bearer ${apiKey}`,
+      },
+    }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { text += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(text));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('model api timeout')));
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function parseModelJson(content) {
+  if (!content) return {};
+  if (typeof content === 'object') return content;
+  const text = String(content).trim();
+  try {
+    return JSON.parse(text);
+  } catch (_err) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return {};
+    return JSON.parse(match[0]);
+  }
+}
+
+function normalizeRecognitionResult(result = {}) {
+  const allowedSubjects = ['语文', '数学', '英语', '其他'];
+  const subject = allowedSubjects.includes(result.subject) ? result.subject : '其他';
+  const batchDate = /^\d{4}-\d{2}-\d{2}$/.test(result.batch_date || '') ? result.batch_date : null;
+  const rawText = String(result.raw_text || '')
+    .split(/[\n\r]+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n');
+
+  return {
+    subject,
+    batch_date: batchDate,
+    raw_text: rawText,
+    confidence: Number(result.confidence || 0),
   };
 }
 

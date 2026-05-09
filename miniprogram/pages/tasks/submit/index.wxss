@@ -4,6 +4,44 @@
   min-height: 100vh;
 }
 
+.submit-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.submit-sub {
+  font-size: 25rpx;
+  color: #888;
+  line-height: 1.6;
+  margin-bottom: 28rpx;
+}
+
+.mode-tabs {
+  display: flex;
+  padding: 8rpx;
+  margin-bottom: 28rpx;
+  background: #F5F6FA;
+  border-radius: 18rpx;
+}
+
+.mode-tab {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  border-radius: 14rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.mode-tab.active {
+  background: #ffffff;
+  color: #4F6EF7;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(79, 110, 247, 0.12);
+}
+
 .form-group {
   margin-bottom: 28rpx;
 }
@@ -16,6 +54,49 @@
   margin-bottom: 12rpx;
 }
 
+.form-hint {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.5;
+  margin-top: 10rpx;
+}
+
+.textarea-field.small {
+  min-height: 140rpx;
+}
+
+.upload-box {
+  height: 300rpx;
+  border: 2rpx dashed #D8DCE8;
+  border-radius: 18rpx;
+  background: #FAFBFE;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.upload-icon {
+  font-size: 64rpx;
+  margin-bottom: 12rpx;
+}
+
+.upload-text {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+}
+
 .btn-primary {
   margin-top: 16rpx;
+}
+
+.btn-primary.disabled {
+  opacity: 0.6;
 }

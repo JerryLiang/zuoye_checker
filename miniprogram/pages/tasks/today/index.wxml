@@ -43,7 +43,7 @@
         </text>
       </view>
       <view class="task-actions" wx:if="{{item.status !== 2}}">
-        <view class="btn-submit" data-id="{{item._id}}" bindtap="goSubmit">去提交</view>
+        <view class="btn-submit" data-id="{{item._id}}" bindtap="goSubmit">去完成</view>
       </view>
     </view>
   </block>

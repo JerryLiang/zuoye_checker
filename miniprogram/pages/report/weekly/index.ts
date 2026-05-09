@@ -51,6 +51,16 @@ Page({
     this.fetchWeek(childId, nextStart);
   },
 
+  onWeekPick(e: WechatMiniprogram.PickerChange) {
+    const app = getApp<IAppOption>();
+    const childId = app.globalData.currentChildId;
+    if (!childId) return;
+
+    const pickedDate = e.detail.value as string;
+    const weekStart = this.getWeekStart(pickedDate);
+    this.fetchWeek(childId, weekStart);
+  },
+
   async fetchWeek(childId: string, startDate: string) {
     try {
       this.setData({ loading: true });
@@ -74,6 +84,14 @@ Page({
   getNextWeekStart(currentStart: string): string {
     const d = new Date(currentStart);
     d.setDate(d.getDate() + 7);
+    return this.formatDate(d);
+  },
+
+  getWeekStart(dateStr: string): string {
+    const d = new Date(dateStr);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
     return this.formatDate(d);
   },
 

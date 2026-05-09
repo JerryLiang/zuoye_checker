@@ -9,7 +9,6 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
   const openid = wxContext.OPENID;
 
-  // 获取用户
   const userRes = await db.collection('users').where({ openid }).get();
   if (userRes.data.length === 0) {
     return { code: 401, message: '未登录', data: null };
@@ -19,7 +18,7 @@ exports.main = async (event, context) => {
   try {
     switch (action) {
       case 'weekly':
-        return await getWeeklyReport(user._id, data);
+        return await getWeeklyReport(user._id, data || {});
       default:
         return { code: 400, message: '未知操作', data: null };
     }
@@ -35,7 +34,6 @@ async function getWeeklyReport(userId, data) {
     return { code: 400, message: '缺少child_id', data: null };
   }
 
-  // 验证孩子归属
   const childRes = await db.collection('children')
     .where({ _id: child_id, user_id: userId })
     .get();
@@ -44,76 +42,101 @@ async function getWeeklyReport(userId, data) {
     return { code: 404, message: '孩子不存在', data: null };
   }
 
-  // 计算本周日期范围
-  const weekStart = start_date || getWeekStart();
+  const weekStart = isDateString(start_date) ? start_date : getWeekStart();
   const weekEnd = getWeekEnd(weekStart);
+  const weekDates = Array.from({ length: 7 }, (_, i) => formatDate(addDays(weekStart, i)));
+  const dateSet = new Set(weekDates);
 
-  // 获取本周每日完成情况
-  const dailyStats = [];
-  let totalTasks = 0;
-  let completedTasks = 0;
-  let totalScore = 0;
-  let scoreCount = 0;
-
-  for (let i = 0; i < 7; i++) {
-    const date = addDays(weekStart, i);
-    const dateStr = formatDate(date);
-
-    const completionRes = await db.collection('daily_completions')
-      .where({ child_id, completion_date: dateStr })
-      .get();
-
-    const dayData = completionRes.data.length > 0 ? completionRes.data[0] : {
-      total_tasks: 0,
-      completed_tasks: 0,
-    };
-
-    // 获取当日任务的平均分
-    const tasksRes = await db.collection('task_items')
-      .where({ child_id })
-      .get();
-
-    let dayScore = 0;
-    let dayScoreCount = 0;
-
-    for (const task of tasksRes.data) {
-      const submissionRes = await db.collection('task_submissions')
-        .where({ task_id: task._id })
-        .get();
-
-      if (submissionRes.data.length > 0) {
-        const checkRes = await db.collection('check_results')
-          .where({ submission_id: submissionRes.data[0]._id })
-          .get();
-
-        if (checkRes.data.length > 0) {
-          dayScore += checkRes.data[0].score;
-          dayScoreCount++;
-        }
-      }
-    }
-
-    const avgScore = dayScoreCount > 0 ? Math.round(dayScore / dayScoreCount) : 0;
-
-    dailyStats.push({
+  const dailyMap = {};
+  weekDates.forEach((dateStr, index) => {
+    dailyMap[dateStr] = {
       date: dateStr,
-      total: dayData.total_tasks,
-      completed: dayData.completed_tasks,
-      avg_score: avgScore,
-    });
+      weekday: getWeekdayName(index),
+      total: 0,
+      completed: 0,
+      avg_score: 0,
+      points: 0,
+      _scoreTotal: 0,
+      _scoreCount: 0,
+    };
+  });
 
-    totalTasks += dayData.total_tasks;
-    completedTasks += dayData.completed_tasks;
-    totalScore += dayScore;
-    scoreCount += dayScoreCount;
+  const batchRes = await db.collection('homework_batches')
+    .where({ user_id: userId, child_id, batch_date: _.gte(weekStart).and(_.lte(weekEnd)) })
+    .get();
+  const batches = batchRes.data || [];
+  const batchDateMap = {};
+  batches.forEach(batch => {
+    if (dateSet.has(batch.batch_date)) {
+      batchDateMap[batch._id] = batch.batch_date;
+    }
+  });
+
+  const batchIds = Object.keys(batchDateMap);
+  let tasks = [];
+  if (batchIds.length > 0) {
+    const taskRes = await db.collection('task_items')
+      .where({ child_id, batch_id: _.in(batchIds) })
+      .get();
+    tasks = taskRes.data || [];
   }
 
-  // 获取积分账户
-  const accountRes = await db.collection('reward_accounts')
-    .where({ child_id })
+  const taskDateMap = {};
+  tasks.forEach(task => {
+    const dateStr = batchDateMap[task.batch_id];
+    if (!dateStr || !dailyMap[dateStr]) return;
+    taskDateMap[task._id] = dateStr;
+    dailyMap[dateStr].total += 1;
+    if (task.status === 2) {
+      dailyMap[dateStr].completed += 1;
+    }
+  });
+
+  const taskIds = Object.keys(taskDateMap);
+  if (taskIds.length > 0) {
+    const checkRes = await db.collection('check_results')
+      .where({ task_id: _.in(taskIds) })
+      .get();
+    (checkRes.data || []).forEach(check => {
+      const dateStr = taskDateMap[check.task_id];
+      if (!dateStr || !dailyMap[dateStr]) return;
+      const score = Number(check.score || 0);
+      dailyMap[dateStr]._scoreTotal += score;
+      dailyMap[dateStr]._scoreCount += 1;
+    });
+  }
+
+  const rewardRes = await db.collection('reward_records')
+    .where({
+      child_id,
+      created_at: _.gte(dateStart(weekStart)).and(_.lt(dateEndExclusive(weekEnd))),
+    })
     .get();
 
-  const totalPoints = accountRes.data.length > 0 ? accountRes.data[0].total_points : 0;
+  let totalPoints = 0;
+  let totalScore = 0;
+  let scoreCount = 0;
+  (rewardRes.data || []).forEach(record => {
+    const points = Number(record.points || 0);
+    totalPoints += points;
+    const dateStr = formatDate(new Date(record.created_at));
+    if (dailyMap[dateStr]) {
+      dailyMap[dateStr].points += points;
+    }
+  });
+
+  const dailyStats = weekDates.map(dateStr => {
+    const day = dailyMap[dateStr];
+    totalScore += day._scoreTotal;
+    scoreCount += day._scoreCount;
+    day.avg_score = day._scoreCount > 0 ? Math.round(day._scoreTotal / day._scoreCount) : 0;
+    delete day._scoreTotal;
+    delete day._scoreCount;
+    return day;
+  });
+
+  const totalTasks = dailyStats.reduce((sum, item) => sum + item.total, 0);
+  const completedTasks = dailyStats.reduce((sum, item) => sum + item.completed, 0);
 
   return {
     code: 0,
@@ -125,13 +148,17 @@ async function getWeeklyReport(userId, data) {
       summary: {
         total_tasks: totalTasks,
         completed_tasks: completedTasks,
-        completion_rate: totalTasks > 0 ? Math.round(completedTasks / totalTasks * 100) : 0,
+        completion_rate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
         avg_score: scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0,
         total_points: totalPoints,
       },
       daily_stats: dailyStats,
     },
   };
+}
+
+function isDateString(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value || '');
 }
 
 function getWeekStart() {
@@ -143,14 +170,30 @@ function getWeekStart() {
 }
 
 function getWeekEnd(weekStart) {
-  const start = new Date(weekStart);
-  const end = addDays(start, 6);
-  return formatDate(end);
+  return formatDate(addDays(weekStart, 6));
 }
 
 function addDays(dateStr, days) {
-  const date = new Date(dateStr);
+  const date = parseDateLocal(dateStr);
   date.setDate(date.getDate() + days);
+  return date;
+}
+
+function parseDateLocal(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function dateStart(dateStr) {
+  const date = parseDateLocal(dateStr);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function dateEndExclusive(dateStr) {
+  const date = parseDateLocal(dateStr);
+  date.setDate(date.getDate() + 1);
+  date.setHours(0, 0, 0, 0);
   return date;
 }
 
@@ -159,4 +202,8 @@ function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function getWeekdayName(index) {
+  return ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][index] || '';
 }

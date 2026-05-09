@@ -22,6 +22,9 @@ exports.homeworkApi = {
     create(payload) {
         return callHomeworks('create', { data: payload });
     },
+    recognizeImage(file_asset_id) {
+        return callHomeworks('recognize_image', { data: { file_asset_id } });
+    },
     update(id, payload) {
         return callHomeworks('update', { id, data: payload });
     },

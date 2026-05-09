@@ -14,7 +14,12 @@
     <!-- 周切换 -->
     <view class="week-nav">
       <view class="nav-btn" bindtap="onPrevWeek">&lt;</view>
-      <text class="week-label">{{weekLabel}}</text>
+      <picker mode="date" value="{{report.week_start}}" bindchange="onWeekPick">
+        <view class="week-picker">
+          <text class="week-label">{{weekLabel}}</text>
+          <text class="week-hint">点击选择周次</text>
+        </view>
+      </picker>
       <view class="nav-btn" bindtap="onNextWeek">&gt;</view>
     </view>
 
@@ -64,6 +69,7 @@
           <text class="day-score">{{item.avg_score}}分</text>
         </view>
         <text class="day-empty" wx:else>无任务</text>
+        <view class="day-points" wx:if="{{item.points > 0}}">+{{item.points}} 积分</view>
       </view>
     </view>
 

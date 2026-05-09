@@ -58,7 +58,7 @@ async function getOverview(userId, data) {
   const recordsRes = await db.collection('reward_records')
     .where({ child_id })
     .orderBy('created_at', 'desc')
-    .limit(10)
+    .limit(50)
     .get();
 
   // 获取今日完成情况
