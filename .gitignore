@@ -36,6 +36,8 @@ miniprogram/project.private.config.json
 
 # Cloud functions dependencies
 cloudfunctions/**/node_modules/
+cloudfunctions/**/.env
+cloudfunctions/**/.env.*
 
 # Database (dev only)
 backend/database/database.sqlite

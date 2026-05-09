@@ -6,9 +6,9 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
-const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://api.openai.com/v1';
-const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || '';
-const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || '';
+const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://coding.dashscope.aliyuncs.com/v1';
+const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'qwen3.6-plus';
+const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.DASHSCOPE_API_KEY || '';
 
 exports.main = async (event, context) => {
   const { action, data, id } = event;
