@@ -8,10 +8,8 @@ exports.uploadApi = {
             throw new Error('缺少学生信息');
         }
         const timestamp = Date.now();
-        const ext = (filePath.split('.').pop() || 'jpg').toLowerCase();
-        if (!ALLOWED_EXTS.includes(ext)) {
-            throw new Error('文件类型不支持');
-        }
+        const rawExt = (filePath.split('.').pop() || 'jpg').toLowerCase();
+        const ext = ALLOWED_EXTS.includes(rawExt) ? rawExt : 'jpg';
         const cloudPath = `uploads/${bizType}/${childId}/${timestamp}.${ext}`;
         const uploadRes = await wx.cloud.uploadFile({
             cloudPath,

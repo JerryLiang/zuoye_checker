@@ -89,12 +89,14 @@ Page({
                 count: 1,
                 mediaType: ['image'],
                 sourceType: ['album', 'camera'],
+                sizeType: ['compressed'],
             });
             const filePath = imageRes.tempFiles[0]?.tempFilePath;
             if (!filePath)
                 return;
-            this.setData({ imagePath: filePath, recognizing: true, recognizedItems: [], rawText: '' });
-            const asset = await upload_1.uploadApi.upload(filePath, 'homework_input', app.globalData.currentChildId);
+            const uploadPath = await this.compressImageForRecognition(filePath);
+            this.setData({ imagePath: uploadPath, recognizing: true, recognizedItems: [], rawText: '' });
+            const asset = await upload_1.uploadApi.upload(uploadPath, 'homework_input', app.globalData.currentChildId);
             this.setData({ fileAssetId: asset._id });
             const recognized = await homework_1.homeworkApi.recognizeImage(asset._id);
             if (recognized?.data) {
@@ -124,6 +126,26 @@ Page({
         finally {
             this.setData({ recognizing: false });
         }
+    },
+    async compressImageForRecognition(filePath) {
+        const maxBytes = 512 * 1024;
+        const getSize = async (path) => {
+            const info = await wx.getFileInfo({ filePath: path });
+            return info.size || 0;
+        };
+        let currentPath = filePath;
+        let currentSize = await getSize(currentPath);
+        if (currentSize <= maxBytes)
+            return currentPath;
+        const qualities = [70, 55, 40, 30, 20, 10];
+        for (const quality of qualities) {
+            const compressed = await wx.compressImage({ src: currentPath, quality });
+            currentPath = compressed.tempFilePath;
+            currentSize = await getSize(currentPath);
+            if (currentSize <= maxBytes)
+                return currentPath;
+        }
+        return currentPath;
     },
     buildRecognizedItems(items, rawText = '', fallbackSubject) {
         if (Array.isArray(items) && items.length > 0) {
