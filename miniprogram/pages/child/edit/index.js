@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const auth_1 = require("../../../api/auth");
 const child_1 = require("../../../api/child");
 Page({
     data: {
@@ -22,20 +21,8 @@ Page({
             const id = options.id;
             this.setData({ editId: id, isEdit: true, isOnboarding: false });
             wx.setNavigationBarTitle({ title: '编辑孩子' });
-            this.ensureLogin().then(() => this.loadChild(id)).catch(() => {
-                wx.showToast({ title: '登录失败，请重试', icon: 'none' });
-            });
+            this.loadChild(id);
         }
-    },
-    async ensureLogin() {
-        const app = getApp();
-        // 这里必须强制调用 auth-login：本地缓存的 token/userId 可能是旧的，
-        // 但云端 users 记录不存在时 children 云函数会返回 401 未登录。
-        const loginRes = await auth_1.authApi.wechatLogin({ nickname: '家长用户' });
-        app.globalData.token = loginRes.data.token;
-        app.globalData.userId = loginRes.data.user.id;
-        wx.setStorageSync('token', loginRes.data.token);
-        wx.setStorageSync('userId', loginRes.data.user.id);
     },
     async loadChild(id) {
         try {
@@ -70,7 +57,6 @@ Page({
             return;
         }
         try {
-            await this.ensureLogin();
             if (this.data.isEdit) {
                 await child_1.childApi.update(this.data.editId, {
                     name: this.data.name.trim(),

@@ -1,4 +1,3 @@
-import { authApi } from '../../../api/auth';
 import { childApi } from '../../../api/child';
 
 Page({
@@ -23,22 +22,8 @@ Page({
       const id = options.id;
       this.setData({ editId: id, isEdit: true, isOnboarding: false });
       wx.setNavigationBarTitle({ title: '编辑孩子' });
-      this.ensureLogin().then(() => this.loadChild(id)).catch(() => {
-        wx.showToast({ title: '登录失败，请重试', icon: 'none' });
-      });
+      this.loadChild(id);
     }
-  },
-
-  async ensureLogin() {
-    const app = getApp<IAppOption>();
-
-    // 这里必须强制调用 auth-login：本地缓存的 token/userId 可能是旧的，
-    // 但云端 users 记录不存在时 children 云函数会返回 401 未登录。
-    const loginRes = await authApi.wechatLogin({ nickname: '家长用户' });
-    app.globalData.token = loginRes.data.token;
-    app.globalData.userId = loginRes.data.user.id;
-    wx.setStorageSync('token', loginRes.data.token);
-    wx.setStorageSync('userId', loginRes.data.user.id);
   },
 
   async loadChild(id: string) {
@@ -78,8 +63,6 @@ Page({
     }
 
     try {
-      await this.ensureLogin();
-
       if (this.data.isEdit) {
         await childApi.update(this.data.editId, {
           name: this.data.name.trim(),
@@ -118,8 +101,6 @@ Page({
 
 interface IAppOption {
   globalData: {
-    token: string;
-    userId: string;
     currentChildId: string;
   };
 }
