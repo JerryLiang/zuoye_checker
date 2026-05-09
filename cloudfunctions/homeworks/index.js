@@ -6,8 +6,8 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
-const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'qwen-vl-plus';
+const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://api.deepseek.com';
+const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'deepseek-v4-flash';
 const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.DASHSCOPE_API_KEY || '';
 
 exports.main = async (event, context) => {
@@ -286,8 +286,10 @@ async function recognizeHomeworkImage(userId, data = {}) {
       data: normalizeRecognitionResult(recognition),
     };
   } catch (err) {
-    console.error('recognizeHomeworkImage failed:', {
+    logAiDebug('error', {
       message: err && err.message,
+      statusCode: err && err.statusCode,
+      responseBody: err && err.responseBody,
       baseUrl: HOMEWORK_AI_BASE_URL,
       model: HOMEWORK_AI_MODEL,
     });
@@ -351,7 +353,7 @@ async function callVisionModel({ imageBuffer, mimeType }) {
     temperature: 0.1,
   };
 
-  console.log('[homeworks.ai.request]', {
+  logAiDebug('request', {
     endpoint,
     model: HOMEWORK_AI_MODEL,
     mimeType,
@@ -362,7 +364,7 @@ async function callVisionModel({ imageBuffer, mimeType }) {
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY);
   const message = res && res.choices && res.choices[0] ? res.choices[0].message : null;
   const content = extractMessageContent(message);
-  console.log('[homeworks.ai.message]', {
+  logAiDebug('message', {
     durationMs: Date.now() - startedAt,
     responseId: res && res.id,
     finishReason: res && res.choices && res.choices[0] ? res.choices[0].finish_reason : undefined,
@@ -370,8 +372,16 @@ async function callVisionModel({ imageBuffer, mimeType }) {
     contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
   });
   const parsed = parseModelJson(content);
-  console.log('[homeworks.ai.parsed]', parsed);
+  logAiDebug('parsed', parsed);
   return parsed;
+}
+
+function logAiDebug(stage, data) {
+  try {
+    console.error(`[homeworks.ai.${stage}] ${JSON.stringify(data)}`);
+  } catch (_err) {
+    console.error(`[homeworks.ai.${stage}]`, data);
+  }
 }
 
 function extractMessageContent(message) {
@@ -413,13 +423,16 @@ function postJson(url, payload, apiKey) {
       res.setEncoding('utf8');
       res.on('data', chunk => { text += chunk; });
       res.on('end', () => {
-        console.log('[homeworks.ai.http_response]', {
+        logAiDebug('http_response', {
           statusCode: res.statusCode,
           bodyLength: text.length,
           bodyPreview: text.slice(0, 3000),
         });
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`));
+          const error = new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`);
+          error.statusCode = res.statusCode;
+          error.responseBody = text.slice(0, 3000);
+          reject(error);
           return;
         }
         try {
