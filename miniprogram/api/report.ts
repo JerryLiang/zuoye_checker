@@ -24,7 +24,10 @@ async function callReports(action: string, data: any = {}) {
     name: 'reports',
     data: { action, ...data },
   });
-  const result = res.result as { code: number; message: string; data: any };
+  const result = res.result as { code: number; message: string; data: any } | undefined;
+  if (!result) {
+    throw new Error('reports云函数无返回');
+  }
   if (result.code !== 0) {
     throw new Error(result.message || '请求失败');
   }

@@ -26,8 +26,9 @@ Page({
       const report = res.data;
       const weekLabel = `${report.week_start} ~ ${report.week_end}`;
       this.setData({ report, weekLabel });
-    } catch (_e) {
-      wx.showToast({ title: '加载失败', icon: 'none' });
+    } catch (e: any) {
+      console.error('加载周报失败', e);
+      wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
     } finally {
       this.setData({ loading: false });
     }
@@ -68,8 +69,9 @@ Page({
       const report = res.data;
       const weekLabel = `${report.week_start} ~ ${report.week_end}`;
       this.setData({ report, weekLabel });
-    } catch (_e) {
-      wx.showToast({ title: '加载失败', icon: 'none' });
+    } catch (e: any) {
+      console.error('加载周报失败', e);
+      wx.showToast({ title: e?.message || '加载失败', icon: 'none' });
     } finally {
       this.setData({ loading: false });
     }
