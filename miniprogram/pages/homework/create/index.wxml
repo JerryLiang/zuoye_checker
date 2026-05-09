@@ -2,11 +2,11 @@
   <view class="card">
     <view class="mode-tabs">
       <view class="mode-tab {{inputMode === 'text' ? 'active' : ''}}" data-mode="text" bindtap="onModeChange">手动填写</view>
-      <view class="mode-tab {{inputMode === 'photo' ? 'active' : ''}}" data-mode="photo" bindtap="onModeChange">拍照识别</view>
+      <view class="mode-tab {{inputMode === 'photo' ? 'active' : ''}}" data-mode="photo" bindtap="onModeChange">图片识别</view>
     </view>
 
     <!-- 科目选择 -->
-    <view class="form-group">
+    <view class="form-group" wx:if="{{inputMode === 'text'}}">
       <text class="form-label">科目</text>
       <picker mode="selector" range="{{subjects}}" value="{{subjectIndex}}" bindchange="onSubjectChange">
         <view class="picker-field">{{subject}} ▾</view>
@@ -21,34 +21,54 @@
       </picker>
     </view>
 
-    <!-- 拍照上传 -->
+    <!-- 图片上传 -->
     <view class="form-group" wx:if="{{inputMode === 'photo'}}">
       <text class="form-label">作业图片</text>
       <view class="upload-box" bindtap="chooseHomeworkImage">
         <image wx:if="{{imagePath}}" class="preview-image" src="{{imagePath}}" mode="aspectFill"></image>
         <block wx:else>
-          <view class="upload-icon">📷</view>
-          <view class="upload-text">拍照或从相册上传</view>
+          <view class="upload-icon">🖼️</view>
+          <view class="upload-text">拍照或从相册选择图片</view>
         </block>
       </view>
-      <text class="form-hint">{{recognizing ? '正在上传并识别...' : 'AI 会尝试识别日期、科目和作业内容，识别后请确认再提交'}}</text>
+      <text class="form-hint">{{recognizing ? '正在上传并识别...' : '上传后自动识别科目和作业内容，确认后提交'}}</text>
     </view>
 
-    <!-- 作业内容 -->
-    <view class="form-group">
+    <!-- 手动作业内容 -->
+    <view class="form-group" wx:if="{{inputMode === 'text'}}">
+      <view class="section-title-row">
+        <text class="form-label no-margin">作业内容</text>
+        <view class="add-btn" bindtap="addHomeworkItem">＋</view>
+      </view>
+      <view class="homework-input-row" wx:for="{{homeworkItems}}" wx:key="index">
+        <input
+          class="input-field homework-input"
+          placeholder="请输入一条作业内容"
+          data-index="{{index}}"
+          bindinput="onTaskInput"
+          value="{{item.text}}"
+        />
+        <view wx:if="{{homeworkItems.length > 1}}" class="remove-btn" data-index="{{index}}" bindtap="removeHomeworkItem">－</view>
+      </view>
+      <text class="form-hint">每一行会生成一个独立任务；点右上角加号新增一条</text>
+    </view>
+
+    <!-- 识别后的作业内容 -->
+    <view class="form-group" wx:if="{{inputMode === 'photo'}}">
       <text class="form-label">作业内容</text>
-      <textarea
-        class="textarea-field"
-        placeholder="请输入作业内容，每行一个任务&#10;例如：&#10;抄写生词3遍&#10;做练习册第5页"
-        bindinput="onTextInput"
-        maxlength="-1"
-        value="{{rawText}}"
-      ></textarea>
-      <text class="form-hint">提示：每行会自动生成一个独立任务</text>
+      <view wx:if="{{recognizedItems.length > 0}}" class="recognized-list">
+        <view class="recognized-item" wx:for="{{recognizedItems}}" wx:key="index">
+          <view class="recognized-subject">{{item.subject}}</view>
+          <view class="recognized-text">{{item.text}}</view>
+        </view>
+      </view>
+      <view wx:else class="empty-recognized">
+        {{recognizing ? '正在识别作业内容...' : '上传图片后，这里会自动列出科目和作业内容'}}
+      </view>
     </view>
 
     <!-- 数学自动批改答案 -->
-    <view class="form-group auto-check-card">
+    <view class="form-group auto-check-card" wx:if="{{inputMode === 'text'}}">
       <view class="switch-row">
         <view>
           <text class="form-label inline-label">需要自动批改题目答案</text>
