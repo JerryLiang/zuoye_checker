@@ -6,7 +6,7 @@ Page({
   data: {
     loading: false,
     children: [] as ChildItem[],
-    currentChildId: 0,
+    currentChildId: '',
     currentChild: null as ChildItem | null,
     todayTasks: [] as TaskItem[],
     todayTotal: 0,
@@ -32,6 +32,11 @@ Page({
     if (this.data.currentChildId) {
       await this.loadChildren();
       await this.loadTodayTasks();
+      return;
+    }
+
+    if (!this.data.loading) {
+      await this.loadChildren();
     }
   },
 
@@ -51,14 +56,7 @@ Page({
       return;
     }
 
-    const login = await new Promise<WechatMiniprogram.LoginSuccessCallbackResult>((resolve, reject) => {
-      wx.login({ success: resolve, fail: reject });
-    });
-
-    const loginRes = await authApi.wechatLogin({
-      code: login.code,
-      nickname: '家长用户',
-    });
+    const loginRes = await authApi.wechatLogin({ nickname: '家长用户' });
 
     app.globalData.token = loginRes.data.token;
     app.globalData.userId = loginRes.data.user.id;
@@ -71,8 +69,17 @@ Page({
     try {
       const res = await childApi.list();
       const children = res.data || [];
-      const currentId = app.globalData.currentChildId || (children[0]?._id ?? '');
 
+      if (children.length === 0) {
+        app.globalData.currentChildId = '';
+        wx.removeStorageSync('currentChildId');
+        this.setData({ children: [], currentChildId: '', currentChild: null });
+        wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
+        return;
+      }
+
+      const savedId = app.globalData.currentChildId;
+      const currentId = children.some((c: ChildItem) => c._id === savedId) ? savedId : children[0]._id;
       const currentChild = children.find((c: ChildItem) => c._id === currentId) || null;
 
       this.setData({ children, currentChildId: currentId, currentChild });

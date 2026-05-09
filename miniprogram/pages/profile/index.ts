@@ -19,6 +19,9 @@ Page({
         children,
         childCount: children.length,
       });
+      if (children.length === 0) {
+        wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
+      }
     } catch (_e) {
       // 未登录时静默处理
     }
@@ -48,6 +51,7 @@ Page({
           app.globalData.userId = '';
           app.globalData.currentChildId = '';
           wx.showToast({ title: '已清除', icon: 'success' });
+          wx.switchTab({ url: '/pages/index/index' });
         }
       },
     });

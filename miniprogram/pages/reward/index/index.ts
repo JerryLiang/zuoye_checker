@@ -9,7 +9,10 @@ Page({
 
   async onShow() {
     const app = getApp<IAppOption>();
-    if (!app.globalData.currentChildId) return;
+    if (!app.globalData.currentChildId) {
+      wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
+      return;
+    }
 
     try {
       const res = await rewardApi.overview(app.globalData.currentChildId);

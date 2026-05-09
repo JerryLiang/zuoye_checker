@@ -8,12 +8,19 @@ Page({
     ageIndex: 0,
     grade: '',
     isEdit: false,
+    isOnboarding: false,
   },
 
   onLoad(options: Record<string, string>) {
+    if (options.mode === 'onboarding') {
+      this.setData({ isOnboarding: true });
+      wx.setNavigationBarTitle({ title: '添加第一个孩子' });
+      wx.hideHomeButton?.();
+    }
+
     if (options.id) {
       const id = options.id;
-      this.setData({ editId: id, isEdit: true });
+      this.setData({ editId: id, isEdit: true, isOnboarding: false });
       wx.setNavigationBarTitle({ title: '编辑孩子' });
       this.loadChild(id);
     }
@@ -50,7 +57,7 @@ Page({
   },
 
   async onSubmit() {
-    if (!this.data.name) {
+    if (!this.data.name.trim()) {
       wx.showToast({ title: '请输入姓名', icon: 'none' });
       return;
     }
@@ -58,22 +65,41 @@ Page({
     try {
       if (this.data.isEdit) {
         await childApi.update(this.data.editId, {
-          name: this.data.name,
+          name: this.data.name.trim(),
           age_group: this.data.ageGroup as '3-6' | '7-9' | '10-12',
           grade: this.data.grade,
         });
         wx.showToast({ title: '保存成功', icon: 'success' });
+        setTimeout(() => wx.navigateBack(), 500);
       } else {
-        await childApi.create({
-          name: this.data.name,
+        const res = await childApi.create({
+          name: this.data.name.trim(),
           age_group: this.data.ageGroup as '3-6' | '7-9' | '10-12',
           grade: this.data.grade,
         });
+
+        const childId = res.data._id;
+        const app = getApp<IAppOption>();
+        app.globalData.currentChildId = childId;
+        wx.setStorageSync('currentChildId', childId);
+
         wx.showToast({ title: '添加成功', icon: 'success' });
+        setTimeout(() => {
+          if (this.data.isOnboarding) {
+            wx.switchTab({ url: '/pages/index/index' });
+          } else {
+            wx.navigateBack();
+          }
+        }, 500);
       }
-      setTimeout(() => wx.navigateBack(), 500);
     } catch (_e) {
       wx.showToast({ title: '操作失败', icon: 'none' });
     }
   },
 });
+
+interface IAppOption {
+  globalData: {
+    currentChildId: string;
+  };
+}

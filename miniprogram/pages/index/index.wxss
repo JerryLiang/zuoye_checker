@@ -138,6 +138,36 @@
   padding: 30rpx 0;
 }
 
+.task-empty,
+.empty-state {
+  text-align: center;
+  padding: 36rpx 24rpx;
+}
+
+.empty-icon {
+  font-size: 64rpx;
+  margin-bottom: 16rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.empty-sub {
+  font-size: 25rpx;
+  color: #888;
+  line-height: 1.6;
+}
+
+.empty-action {
+  margin: 28rpx auto 0;
+  max-width: 360rpx;
+}
+
+
 /* 快捷操作 */
 .action-grid {
   display: flex;

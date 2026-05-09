@@ -17,7 +17,18 @@ Page({
     try {
       this.setData({ loading: true });
       const res = await childApi.list();
-      this.setData({ children: res.data || [] });
+      const children = res.data || [];
+      const app = getApp<IAppOption>();
+      const currentChildId = children.some((child: ChildItem) => child._id === app.globalData.currentChildId)
+        ? app.globalData.currentChildId
+        : '';
+
+      if (!currentChildId) {
+        app.globalData.currentChildId = '';
+        wx.removeStorageSync('currentChildId');
+      }
+
+      this.setData({ children, currentChildId });
     } catch (_e) {
       wx.showToast({ title: '加载失败', icon: 'none' });
     } finally {
@@ -45,6 +56,11 @@ Page({
 
     try {
       await childApi.remove(id);
+      const app = getApp<IAppOption>();
+      if (app.globalData.currentChildId === id) {
+        app.globalData.currentChildId = '';
+        wx.removeStorageSync('currentChildId');
+      }
       wx.showToast({ title: '已删除', icon: 'success' });
       this.loadChildren();
     } catch (_e) {

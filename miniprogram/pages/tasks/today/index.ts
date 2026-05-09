@@ -29,6 +29,7 @@ Page({
     const childId = app.globalData.currentChildId;
     if (!childId) {
       this.setData({ tasks: [], totalTasks: 0, doneTasks: 0 });
+      wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
       return;
     }
 

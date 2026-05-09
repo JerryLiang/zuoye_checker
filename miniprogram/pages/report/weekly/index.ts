@@ -16,6 +16,7 @@ Page({
     const childId = app.globalData.currentChildId;
     if (!childId) {
       this.setData({ loading: false });
+      wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
       return;
     }
 

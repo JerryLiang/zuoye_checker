@@ -30,11 +30,12 @@
       </scroll-view>
     </view>
 
-    <!-- 无孩子提示 -->
+    <!-- 无孩子提示：正常情况下会被强制 onboarding 接管 -->
     <view class="card empty-state" wx:if="{{children.length === 0}}">
       <view class="empty-icon">👋</view>
-      <view class="empty-text">还没有添加孩子信息</view>
-      <view class="btn-primary" style="margin-top: 24rpx;" bindtap="goAddChild">+ 添加孩子</view>
+      <view class="empty-text">先添加第一个孩子</view>
+      <view class="empty-sub">添加后就可以创建作业、查看任务和学习周报</view>
+      <view class="btn-primary empty-action" bindtap="goAddChild">立即添加孩子</view>
     </view>
 
     <!-- 今日任务概览 -->
@@ -46,12 +47,15 @@
         <view class="progress-bar">
           <view class="progress-fill" style="width: {{todayTotal > 0 ? (todayDone / todayTotal * 100) : 0}}%"></view>
         </view>
-        <view class="progress-text">{{todayDone}}/{{todayTotal}} 已完成</view>
+        <view class="progress-text">已完成 {{todayDone}} / 总共 {{todayTotal}}</view>
       </view>
 
       <!-- 任务列表 -->
-      <view wx:if="{{todayTasks.length === 0}}" class="empty-hint">
-        暂无任务，点击下方按钮创建作业
+      <view wx:if="{{todayTasks.length === 0}}" class="task-empty">
+        <view class="empty-icon">📚</view>
+        <view class="empty-text">今天还没有作业任务</view>
+        <view class="empty-sub">给 {{currentChild.name}} 创建今天的学习任务吧</view>
+        <view class="btn-primary empty-action" bindtap="goCreateHomework">立即创建作业</view>
       </view>
 
       <view
