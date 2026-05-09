@@ -4,6 +4,7 @@
   "main": "index.js",
   "timeout": 60,
   "dependencies": {
+    "sharp": "^0.33.5",
     "wx-server-sdk": "~2.6.3"
   }
 }

@@ -1,5 +1,11 @@
 const cloud = require('wx-server-sdk');
 const https = require('https');
+let sharp = null;
+try {
+  sharp = require('sharp');
+} catch (_err) {
+  sharp = null;
+}
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -328,9 +334,21 @@ function getImageMimeType(fileExt = '') {
 async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/chat/completions`;
-  const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+  let modelImageBuffer = imageBuffer;
+  let modelMimeType = mimeType;
+  const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
+  const shouldUseTextBase64 = configuredFormat === 'text_base64'
+    || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
+
+  if (shouldUseTextBase64) {
+    const compressed = await compressImageForTextPayload({ imageBuffer, mimeType, debugLogs });
+    modelImageBuffer = compressed.imageBuffer;
+    modelMimeType = compressed.mimeType;
+  }
+
+  const imageBase64 = Buffer.from(modelImageBuffer).toString('base64');
   const promptText = '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条作业内容"}],"confidence":0到1}。如果一张图片里有多个科目，请在 recognized_items 里分别列出每条作业的科目和内容；如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。';
-  const imageInput = buildImageInput({ baseUrl, imageBase64, mimeType, promptText });
+  const imageInput = buildImageInput({ baseUrl, imageBase64, mimeType: modelMimeType, promptText });
   const startedAt = Date.now();
 
   const payload = {
@@ -352,8 +370,11 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   logAiDebug('request', {
     endpoint,
     model: HOMEWORK_AI_MODEL,
-    mimeType,
-    imageBytes: imageBuffer.length,
+    mimeType: modelMimeType,
+    originalImageBytes: imageBuffer.length,
+    imageBytes: modelImageBuffer.length,
+    base64Length: imageBase64.length,
+    imageCompressed: modelImageBuffer.length !== imageBuffer.length,
     imageFormat: imageInput.format,
     messageCount: payload.messages.length,
     userContentType: Array.isArray(imageInput.content) ? 'array' : typeof imageInput.content,
@@ -373,6 +394,61 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const parsed = parseModelJson(content);
   logAiDebug('parsed', parsed, debugLogs);
   return parsed;
+}
+
+async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs }) {
+  const maxBytes = Number(process.env.HOMEWORK_AI_TEXT_IMAGE_MAX_BYTES || 512 * 1024);
+  if (imageBuffer.length <= maxBytes) {
+    logAiDebug('image_prepare', {
+      skipped: true,
+      reason: 'already_under_limit',
+      originalBytes: imageBuffer.length,
+      maxBytes,
+      sharpAvailable: Boolean(sharp),
+    }, debugLogs);
+    return { imageBuffer, mimeType };
+  }
+
+  if (!sharp) {
+    const err = new Error(`图片过大：${imageBuffer.length} bytes，当前 DeepSeek 文本接口需要压缩到 ${maxBytes} bytes 以下，但 sharp 未安装`);
+    err.code = 'image_too_large_without_sharp';
+    throw err;
+  }
+
+  const attempts = [
+    { width: 1600, quality: 70 },
+    { width: 1400, quality: 65 },
+    { width: 1200, quality: 60 },
+    { width: 1000, quality: 55 },
+    { width: 900, quality: 50 },
+    { width: 800, quality: 45 },
+  ];
+
+  let bestBuffer = imageBuffer;
+  for (const attempt of attempts) {
+    const output = await sharp(imageBuffer, { failOn: 'none' })
+      .rotate()
+      .resize({ width: attempt.width, height: attempt.width, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: attempt.quality, mozjpeg: true })
+      .toBuffer();
+
+    bestBuffer = output;
+    logAiDebug('image_prepare', {
+      originalMimeType: mimeType,
+      outputMimeType: 'image/jpeg',
+      originalBytes: imageBuffer.length,
+      outputBytes: output.length,
+      maxBytes,
+      width: attempt.width,
+      quality: attempt.quality,
+    }, debugLogs);
+
+    if (output.length <= maxBytes) {
+      return { imageBuffer: output, mimeType: 'image/jpeg' };
+    }
+  }
+
+  return { imageBuffer: bestBuffer, mimeType: 'image/jpeg' };
 }
 
 function buildImageInput({ baseUrl, imageBase64, mimeType, promptText }) {
