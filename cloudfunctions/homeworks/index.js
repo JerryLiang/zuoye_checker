@@ -329,7 +329,8 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/chat/completions`;
   const imageBase64 = Buffer.from(imageBuffer).toString('base64');
-  const imageContentPart = buildImageContentPart({ baseUrl, imageBase64, mimeType });
+  const promptText = '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条作业内容"}],"confidence":0到1}。如果一张图片里有多个科目，请在 recognized_items 里分别列出每条作业的科目和内容；如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。';
+  const imageInput = buildImageInput({ baseUrl, imageBase64, mimeType, promptText });
   const startedAt = Date.now();
 
   const payload = {
@@ -342,13 +343,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
       },
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条作业内容"}],"confidence":0到1}。如果一张图片里有多个科目，请在 recognized_items 里分别列出每条作业的科目和内容；如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。',
-          },
-          imageContentPart,
-        ],
+        content: imageInput.content,
       },
     ],
     temperature: 0.1,
@@ -359,8 +354,9 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
     model: HOMEWORK_AI_MODEL,
     mimeType,
     imageBytes: imageBuffer.length,
-    imageFormat: imageContentPart.type,
+    imageFormat: imageInput.format,
     messageCount: payload.messages.length,
+    userContentType: Array.isArray(imageInput.content) ? 'array' : typeof imageInput.content,
     responseFormat: payload.response_format,
   }, debugLogs);
 
@@ -379,23 +375,41 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   return parsed;
 }
 
-function buildImageContentPart({ baseUrl, imageBase64, mimeType }) {
+function buildImageInput({ baseUrl, imageBase64, mimeType, promptText }) {
   const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
-  const shouldUseMcpImage = configuredFormat === 'mcp_image'
-    || (!configuredFormat && /^deepseek/i.test(HOMEWORK_AI_MODEL || ''))
+  const shouldUseTextBase64 = configuredFormat === 'text_base64'
     || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
 
-  if (shouldUseMcpImage) {
+  if (shouldUseTextBase64) {
     return {
-      type: 'image',
-      data: imageBase64,
-      mimeType,
+      format: 'text_base64',
+      content: `${promptText}\n\n图片 MIME 类型：${mimeType}\n图片 base64 数据：data:${mimeType};base64,${imageBase64}`,
+    };
+  }
+
+  if (configuredFormat === 'mcp_image') {
+    return {
+      format: 'mcp_image',
+      content: [
+        { type: 'text', text: promptText },
+        {
+          type: 'image',
+          data: imageBase64,
+          mimeType,
+        },
+      ],
     };
   }
 
   return {
-    type: 'image_url',
-    image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+    format: 'openai_image_url',
+    content: [
+      { type: 'text', text: promptText },
+      {
+        type: 'image_url',
+        image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+      },
+    ],
   };
 }
 
