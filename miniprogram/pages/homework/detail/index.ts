@@ -1,4 +1,5 @@
 import { homeworkApi, HomeworkBatch, TaskInBatch } from '../../../api/homework';
+import { requireParentAuth } from '../../../utils/parentAuth';
 
 Page({
   data: {
@@ -12,6 +13,8 @@ Page({
   },
 
   onLoad(options: Record<string, string>) {
+    const redirect = options.id ? `/pages/homework/detail/index?id=${options.id}` : '/pages/parent/home/index';
+    if (!requireParentAuth(redirect)) return;
     if (options.id) {
       this.setData({ batchId: options.id });
       this.loadDetail(options.id);

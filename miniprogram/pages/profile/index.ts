@@ -1,8 +1,9 @@
 import { childApi, ChildItem } from '../../api/child';
+import { clearParentAuth } from '../../utils/parentAuth';
 
 Page({
   data: {
-    nickname: '家长用户',
+    nickname: '孩子端',
     childCount: 0,
     children: [] as ChildItem[],
   },
@@ -19,24 +20,25 @@ Page({
         children,
         childCount: children.length,
       });
-      if (children.length === 0) {
-        wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
-      }
     } catch (_e) {
       // 未登录时静默处理
     }
   },
 
-  goChildList() {
-    wx.navigateTo({ url: '/pages/child/list/index' });
+  goRoleSelect() {
+    wx.reLaunch({ url: '/pages/role/select/index' });
   },
 
-  goAddChild() {
-    wx.navigateTo({ url: '/pages/child/edit/index' });
+  goParentHome() {
+    wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/parent/home/index' });
   },
 
-  goWeeklyReport() {
-    wx.navigateTo({ url: '/pages/report/weekly/index' });
+  goTodayTasks() {
+    wx.switchTab({ url: '/pages/tasks/today/index' });
+  },
+
+  goReward() {
+    wx.switchTab({ url: '/pages/reward/index/index' });
   },
 
   onClearCache() {
@@ -46,12 +48,13 @@ Page({
       success(res) {
         if (res.confirm) {
           wx.clearStorageSync();
+          clearParentAuth();
           const app = getApp<IAppOption>();
           app.globalData.token = '';
           app.globalData.userId = '';
           app.globalData.currentChildId = '';
           wx.showToast({ title: '已清除', icon: 'success' });
-          wx.switchTab({ url: '/pages/index/index' });
+          wx.reLaunch({ url: '/pages/role/select/index' });
         }
       },
     });

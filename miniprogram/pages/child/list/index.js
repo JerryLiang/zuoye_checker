@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const child_1 = require("../../../api/child");
+const parentAuth_1 = require("../../../utils/parentAuth");
 Page({
     data: {
         children: [],
@@ -8,6 +9,8 @@ Page({
         loading: true,
     },
     onShow() {
+        if (!(0, parentAuth_1.requireParentAuth)('/pages/child/list/index'))
+            return;
         const app = getApp();
         this.setData({ currentChildId: app.globalData.currentChildId });
         this.loadChildren();

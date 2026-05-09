@@ -1,4 +1,5 @@
 import { reportApi, WeeklyReport } from '../../../api/report';
+import { requireParentAuth } from '../../../utils/parentAuth';
 
 Page({
   data: {
@@ -8,6 +9,7 @@ Page({
   },
 
   onShow() {
+    if (!requireParentAuth('/pages/report/weekly/index')) return;
     this.loadReport();
   },
 

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const homework_1 = require("../../../api/homework");
+const parentAuth_1 = require("../../../utils/parentAuth");
 Page({
     data: {
         batch: null,
@@ -12,6 +13,9 @@ Page({
         progressPct: 0,
     },
     onLoad(options) {
+        const redirect = options.id ? `/pages/homework/detail/index?id=${options.id}` : '/pages/parent/home/index';
+        if (!(0, parentAuth_1.requireParentAuth)(redirect))
+            return;
         if (options.id) {
             this.setData({ batchId: options.id });
             this.loadDetail(options.id);

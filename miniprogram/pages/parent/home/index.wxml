@@ -1,0 +1,63 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading-wrap">加载中...</view>
+
+  <block wx:else>
+    <view class="parent-hero">
+      <view>
+        <view class="parent-title">家长管理台</view>
+        <view class="parent-sub" wx:if="{{currentChild}}">正在管理：{{currentChild.name}}</view>
+        <view class="parent-sub" wx:else>请先添加孩子</view>
+      </view>
+      <view class="role-switch" bindtap="goChildMode">孩子端</view>
+    </view>
+
+    <view class="card" wx:if="{{children.length > 0}}">
+      <view class="section-title">切换孩子</view>
+      <scroll-view scroll-x class="child-scroll">
+        <view class="child-pills">
+          <view wx:for="{{children}}" wx:key="_id" class="child-pill {{currentChildId === item._id ? 'active' : ''}}" data-id="{{item._id}}" bindtap="onSelectChild">
+            {{item.name}}
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="card overview-card" wx:if="{{currentChild}}">
+      <view class="section-title">今日概览</view>
+      <view class="overview-row">
+        <view class="overview-item">
+          <view class="overview-number">{{todayTotal}}</view>
+          <view class="overview-label">任务总数</view>
+        </view>
+        <view class="overview-item">
+          <view class="overview-number done">{{todayDone}}</view>
+          <view class="overview-label">已完成</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">家长操作</view>
+      <view class="action-grid">
+        <view class="action-item" bindtap="goCreateHomework">
+          <view class="action-icon blue">📝</view>
+          <text>创建作业</text>
+        </view>
+        <view class="action-item" bindtap="goWeeklyReport">
+          <view class="action-icon purple">📊</view>
+          <text>学习周报</text>
+        </view>
+        <view class="action-item" bindtap="goChildList">
+          <view class="action-icon green">👶</view>
+          <text>孩子管理</text>
+        </view>
+        <view class="action-item" bindtap="goAddChild">
+          <view class="action-icon orange">➕</view>
+          <text>添加孩子</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="btn-secondary logout-btn" bindtap="logoutParent">退出家长端认证</view>
+  </block>
+</view>

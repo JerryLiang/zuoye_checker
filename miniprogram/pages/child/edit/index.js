@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const child_1 = require("../../../api/child");
+const parentAuth_1 = require("../../../utils/parentAuth");
 Page({
     data: {
         editId: '',
@@ -12,6 +13,9 @@ Page({
         isOnboarding: false,
     },
     onLoad(options) {
+        const redirect = options.id ? `/pages/child/edit/index?id=${options.id}` : '/pages/child/edit/index';
+        if (!(0, parentAuth_1.requireParentAuth)(redirect))
+            return;
         if (options.mode === 'onboarding') {
             this.setData({ isOnboarding: true });
             wx.setNavigationBarTitle({ title: '添加第一个孩子' });

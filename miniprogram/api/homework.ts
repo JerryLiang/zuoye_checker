@@ -30,11 +30,15 @@ export interface TaskInBatch {
   };
 }
 
-async function callHomeworks(action: string, data: any = {}) {
-  const res = await wx.cloud.callFunction({
+async function callHomeworks(action: string, data: any = {}, options: { timeout?: number } = {}) {
+  const callOptions: any = {
     name: 'homeworks',
     data: { action, ...data },
-  });
+  };
+  if (options.timeout) {
+    callOptions.timeout = options.timeout;
+  }
+  const res = await (wx.cloud.callFunction as any)(callOptions);
   const result = res.result as { code: number; message: string; data: any };
   if (result.code !== 0) {
     throw new Error(result.message || '请求失败');
@@ -76,7 +80,7 @@ export const homeworkApi = {
     return callHomeworks('create', { data: payload });
   },
   recognizeImage(file_asset_id: string) {
-    return callHomeworks('recognize_image', { data: { file_asset_id } }) as Promise<{ code: number; message: string; data: HomeworkRecognitionResult }>;
+    return callHomeworks('recognize_image', { data: { file_asset_id } }, { timeout: 60000 }) as Promise<{ code: number; message: string; data: HomeworkRecognitionResult }>;
   },
   update(id: string, payload: Partial<Pick<HomeworkBatch, 'subject' | 'raw_text' | 'status'>>) {
     return callHomeworks('update', { id, data: payload });

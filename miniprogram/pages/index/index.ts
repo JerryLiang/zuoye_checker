@@ -123,15 +123,23 @@ Page({
   },
 
   goAddChild() {
-    wx.navigateTo({ url: '/pages/child/edit/index' });
+    wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/child/edit/index' });
   },
 
   goCreateHomework() {
-    wx.navigateTo({ url: '/pages/homework/create/index' });
+    wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/homework/create/index' });
   },
 
   goWeeklyReport() {
-    wx.navigateTo({ url: '/pages/report/weekly/index' });
+    wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/report/weekly/index' });
+  },
+
+  goTasks() {
+    wx.switchTab({ url: '/pages/tasks/today/index' });
+  },
+
+  goReward() {
+    wx.switchTab({ url: '/pages/reward/index/index' });
   },
 
   goTaskSubmit(e: WechatMiniprogram.BaseEvent) {

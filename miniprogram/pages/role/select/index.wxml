@@ -1,0 +1,25 @@
+<view class="page role-page">
+  <view class="hero-card">
+    <view class="hero-icon">📚</view>
+    <view class="hero-title">请选择使用身份</view>
+    <view class="hero-sub">孩子完成任务，家长管理作业和查看报告</view>
+  </view>
+
+  <view class="role-card child" bindtap="goChild">
+    <view class="role-icon">🎒</view>
+    <view class="role-content">
+      <view class="role-title">我是孩子</view>
+      <view class="role-desc">查看今日任务、提交作业、查看积分奖励</view>
+    </view>
+    <view class="role-arrow">›</view>
+  </view>
+
+  <view class="role-card parent" bindtap="goParent">
+    <view class="role-icon">👨‍👩‍👧</view>
+    <view class="role-content">
+      <view class="role-title">我是家长</view>
+      <view class="role-desc">创建作业、管理孩子、查看学习周报</view>
+    </view>
+    <view class="role-arrow">›</view>
+  </view>
+</view>

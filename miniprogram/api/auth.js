@@ -16,6 +16,7 @@ exports.authApi = {
         const res = await wx.cloud.callFunction({
             name: 'auth-login',
             data: {
+                action: 'login',
                 code,
                 nickname: payload.nickname,
                 avatar_url: payload.avatar_url,
@@ -30,4 +31,27 @@ exports.authApi = {
         }
         return result;
     },
+    async parentStatus() {
+        return callAuth('parent_status');
+    },
+    async setupParentPin(pin) {
+        return callAuth('setup_parent_pin', { pin });
+    },
+    async verifyParentPin(pin) {
+        return callAuth('verify_parent_pin', { pin });
+    },
 };
+async function callAuth(action, data = {}) {
+    const res = await wx.cloud.callFunction({
+        name: 'auth-login',
+        data: { action, ...data },
+    });
+    const result = res.result;
+    if (!result) {
+        throw new Error('登录云函数无返回');
+    }
+    if (result.code !== 0) {
+        throw new Error(result.message || '认证失败');
+    }
+    return result;
+}

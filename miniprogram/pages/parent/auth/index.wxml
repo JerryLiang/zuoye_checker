@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="auth-card">
+    <view class="lock-icon">🔐</view>
+    <view class="auth-title">{{hasPin ? '家长端认证' : '设置家长PIN'}}</view>
+    <view class="auth-desc">
+      {{hasPin ? '请输入家长PIN进入管理功能' : '第一次进入家长端，请设置4-6位数字PIN'}}
+    </view>
+
+    <input
+      class="pin-input"
+      type="number"
+      password="true"
+      maxlength="6"
+      value="{{pin}}"
+      placeholder="请输入4-6位数字"
+      bindinput="onPinInput"
+      focus="true"
+    />
+
+    <button class="btn-primary auth-btn" loading="{{loading}}" bindtap="onSubmit">
+      {{hasPin ? '进入家长端' : '设置并进入'}}
+    </button>
+
+    <view class="auth-tip">认证通过后30分钟内无需重复输入</view>
+  </view>
+</view>

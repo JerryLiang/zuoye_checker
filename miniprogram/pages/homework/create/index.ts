@@ -1,5 +1,6 @@
 import { homeworkApi } from '../../../api/homework';
 import { uploadApi } from '../../../api/upload';
+import { requireParentAuth } from '../../../utils/parentAuth';
 
 type InputMode = 'text' | 'photo';
 type HomeworkInputItem = { subject?: string; text: string };
@@ -23,6 +24,7 @@ Page({
   },
 
   onLoad() {
+    if (!requireParentAuth('/pages/homework/create/index')) return;
     const now = new Date();
     const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     this.setData({ batchDate: date });

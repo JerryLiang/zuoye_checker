@@ -1,4 +1,5 @@
 import { childApi } from '../../../api/child';
+import { requireParentAuth } from '../../../utils/parentAuth';
 
 Page({
   data: {
@@ -12,6 +13,8 @@ Page({
   },
 
   onLoad(options: Record<string, string>) {
+    const redirect = options.id ? `/pages/child/edit/index?id=${options.id}` : '/pages/child/edit/index';
+    if (!requireParentAuth(redirect)) return;
     if (options.mode === 'onboarding') {
       this.setData({ isOnboarding: true });
       wx.setNavigationBarTitle({ title: '添加第一个孩子' });

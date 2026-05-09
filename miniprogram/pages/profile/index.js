@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const child_1 = require("../../api/child");
+const parentAuth_1 = require("../../utils/parentAuth");
 Page({
     data: {
-        nickname: '家长用户',
+        nickname: '孩子端',
         childCount: 0,
         children: [],
     },
@@ -18,22 +19,22 @@ Page({
                 children,
                 childCount: children.length,
             });
-            if (children.length === 0) {
-                wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
-            }
         }
         catch (_e) {
             // 未登录时静默处理
         }
     },
-    goChildList() {
-        wx.navigateTo({ url: '/pages/child/list/index' });
+    goRoleSelect() {
+        wx.reLaunch({ url: '/pages/role/select/index' });
     },
-    goAddChild() {
-        wx.navigateTo({ url: '/pages/child/edit/index' });
+    goParentHome() {
+        wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/parent/home/index' });
     },
-    goWeeklyReport() {
-        wx.navigateTo({ url: '/pages/report/weekly/index' });
+    goTodayTasks() {
+        wx.switchTab({ url: '/pages/tasks/today/index' });
+    },
+    goReward() {
+        wx.switchTab({ url: '/pages/reward/index/index' });
     },
     onClearCache() {
         wx.showModal({
@@ -42,12 +43,13 @@ Page({
             success(res) {
                 if (res.confirm) {
                     wx.clearStorageSync();
+                    (0, parentAuth_1.clearParentAuth)();
                     const app = getApp();
                     app.globalData.token = '';
                     app.globalData.userId = '';
                     app.globalData.currentChildId = '';
                     wx.showToast({ title: '已清除', icon: 'success' });
-                    wx.switchTab({ url: '/pages/index/index' });
+                    wx.reLaunch({ url: '/pages/role/select/index' });
                 }
             },
         });

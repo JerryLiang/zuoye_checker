@@ -54,8 +54,7 @@
       <view wx:if="{{todayTasks.length === 0}}" class="task-empty">
         <view class="empty-icon">📚</view>
         <view class="empty-text">今天还没有作业任务</view>
-        <view class="empty-sub">给 {{currentChild.name}} 创建今天的学习任务吧</view>
-        <view class="btn-primary empty-action" bindtap="goCreateHomework">立即创建作业</view>
+        <view class="empty-sub">完成家长布置的任务后，奖励积分会自动更新</view>
       </view>
 
       <view
@@ -78,21 +77,17 @@
       </view>
     </view>
 
-    <!-- 快捷操作 -->
+    <!-- 孩子端快捷操作 -->
     <view class="card" wx:if="{{currentChild}}">
       <view class="section-title">快捷操作</view>
       <view class="action-grid">
-        <view class="action-item" bindtap="goCreateHomework">
-          <view class="action-icon blue">📝</view>
-          <text>创建作业</text>
+        <view class="action-item" bindtap="goTasks">
+          <view class="action-icon blue">✅</view>
+          <text>今日任务</text>
         </view>
-        <view class="action-item" bindtap="goWeeklyReport">
-          <view class="action-icon purple">📊</view>
-          <text>学习周报</text>
-        </view>
-        <view class="action-item" bindtap="goAddChild">
-          <view class="action-icon green">👶</view>
-          <text>添加孩子</text>
+        <view class="action-item" bindtap="goReward">
+          <view class="action-icon purple">🎁</view>
+          <text>我的奖励</text>
         </view>
       </view>
     </view>

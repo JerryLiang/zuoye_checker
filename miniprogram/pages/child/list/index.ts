@@ -1,4 +1,5 @@
 import { childApi, ChildItem } from '../../../api/child';
+import { requireParentAuth } from '../../../utils/parentAuth';
 
 Page({
   data: {
@@ -8,6 +9,7 @@ Page({
   },
 
   onShow() {
+    if (!requireParentAuth('/pages/child/list/index')) return;
     const app = getApp<IAppOption>();
     this.setData({ currentChildId: app.globalData.currentChildId });
     this.loadChildren();

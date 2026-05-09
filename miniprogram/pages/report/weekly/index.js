@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const report_1 = require("../../../api/report");
+const parentAuth_1 = require("../../../utils/parentAuth");
 Page({
     data: {
         report: null,
@@ -8,6 +9,8 @@ Page({
         weekLabel: '',
     },
     onShow() {
+        if (!(0, parentAuth_1.requireParentAuth)('/pages/report/weekly/index'))
+            return;
         this.loadReport();
     },
     async loadReport() {

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const homework_1 = require("../../../api/homework");
 const upload_1 = require("../../../api/upload");
+const parentAuth_1 = require("../../../utils/parentAuth");
 Page({
     data: {
         subject: '语文',
@@ -20,6 +21,8 @@ Page({
         recognizing: false,
     },
     onLoad() {
+        if (!(0, parentAuth_1.requireParentAuth)('/pages/homework/create/index'))
+            return;
         const now = new Date();
         const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         this.setData({ batchDate: date });

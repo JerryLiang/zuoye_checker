@@ -1,9 +1,12 @@
 {
   "pages": [
+    "pages/role/select/index",
     "pages/index/index",
     "pages/tasks/today/index",
     "pages/reward/index/index",
     "pages/profile/index",
+    "pages/parent/auth/index",
+    "pages/parent/home/index",
     "pages/homework/create/index",
     "pages/tasks/submit/index",
     "pages/child/list/index",
