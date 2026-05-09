@@ -21,6 +21,8 @@ Page({
     imagePath: '',
     fileAssetId: '',
     recognizing: false,
+    canvasWidth: 300,
+    canvasHeight: 300,
   },
 
   onLoad() {
@@ -151,15 +153,44 @@ Page({
     let currentSize = await getSize(currentPath);
     if (currentSize <= maxBytes) return currentPath;
 
-    const qualities = [70, 55, 40, 30, 20, 10];
-    for (const quality of qualities) {
-      const compressed = await wx.compressImage({ src: currentPath, quality });
-      currentPath = compressed.tempFilePath;
-      currentSize = await getSize(currentPath);
-      if (currentSize <= maxBytes) return currentPath;
+    const imageInfo = await wx.getImageInfo({ src: currentPath });
+    const maxWidths = [1400, 1200, 1000, 800, 640, 520];
+    const qualities = [0.72, 0.6, 0.5, 0.4, 0.32, 0.25];
+
+    for (const maxWidth of maxWidths) {
+      const scale = Math.min(1, maxWidth / Math.max(imageInfo.width, imageInfo.height));
+      const targetWidth = Math.max(1, Math.round(imageInfo.width * scale));
+      const targetHeight = Math.max(1, Math.round(imageInfo.height * scale));
+      this.setData({ canvasWidth: targetWidth, canvasHeight: targetHeight });
+
+      for (const quality of qualities) {
+        currentPath = await this.drawImageToJpeg(currentPath, targetWidth, targetHeight, quality);
+        currentSize = await getSize(currentPath);
+        if (currentSize <= maxBytes) return currentPath;
+      }
     }
 
-    return currentPath;
+    const compressed = await wx.compressImage({ src: currentPath, quality: 10 });
+    return compressed.tempFilePath;
+  },
+
+  drawImageToJpeg(filePath: string, width: number, height: number, quality: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const ctx = wx.createCanvasContext('compressCanvas', this);
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(filePath, 0, 0, width, height);
+      ctx.draw(false, () => {
+        wx.canvasToTempFilePath({
+          canvasId: 'compressCanvas',
+          destWidth: width,
+          destHeight: height,
+          fileType: 'jpg',
+          quality,
+          success: res => resolve(res.tempFilePath),
+          fail: reject,
+        }, this);
+      });
+    });
   },
 
   buildRecognizedItems(items?: HomeworkInputItem[], rawText = '', fallbackSubject?: string) {

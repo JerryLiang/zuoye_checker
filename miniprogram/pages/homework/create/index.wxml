@@ -1,4 +1,5 @@
 <view class="page">
+  <canvas canvas-id="compressCanvas" class="compress-canvas" style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;"></canvas>
   <view class="card">
     <view class="mode-tabs">
       <view class="mode-tab {{inputMode === 'text' ? 'active' : ''}}" data-mode="text" bindtap="onModeChange">手动填写</view>
