@@ -326,11 +326,13 @@ function getImageMimeType(fileExt = '') {
 async function callVisionModel({ imageBuffer, mimeType }) {
   const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/chat/completions`;
-  const imageDataUrl = `data:${mimeType};base64,${Buffer.from(imageBuffer).toString('base64')}`;
+  const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+  const imageContentPart = buildImageContentPart({ baseUrl, imageBase64, mimeType });
   const startedAt = Date.now();
 
   const payload = {
     model: HOMEWORK_AI_MODEL,
+    response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
@@ -343,10 +345,7 @@ async function callVisionModel({ imageBuffer, mimeType }) {
             type: 'text',
             text: '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条作业内容"}],"confidence":0到1}。如果一张图片里有多个科目，请在 recognized_items 里分别列出每条作业的科目和内容；如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。',
           },
-          {
-            type: 'image_url',
-            image_url: { url: imageDataUrl },
-          },
+          imageContentPart,
         ],
       },
     ],
@@ -358,7 +357,9 @@ async function callVisionModel({ imageBuffer, mimeType }) {
     model: HOMEWORK_AI_MODEL,
     mimeType,
     imageBytes: imageBuffer.length,
+    imageFormat: imageContentPart.type,
     messageCount: payload.messages.length,
+    responseFormat: payload.response_format,
   });
 
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY);
@@ -374,6 +375,26 @@ async function callVisionModel({ imageBuffer, mimeType }) {
   const parsed = parseModelJson(content);
   logAiDebug('parsed', parsed);
   return parsed;
+}
+
+function buildImageContentPart({ baseUrl, imageBase64, mimeType }) {
+  const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
+  const shouldUseMcpImage = configuredFormat === 'mcp_image'
+    || (!configuredFormat && /^deepseek/i.test(HOMEWORK_AI_MODEL || ''))
+    || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
+
+  if (shouldUseMcpImage) {
+    return {
+      type: 'image',
+      data: imageBase64,
+      mimeType,
+    };
+  }
+
+  return {
+    type: 'image_url',
+    image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+  };
 }
 
 function logAiDebug(stage, data) {
