@@ -14,6 +14,11 @@ exports.main = async (event, context) => {
   }
 
   try {
+    await ensureCollection('users');
+    if (action === 'create' || action === 'list' || action === 'get' || action === 'update' || action === 'delete') {
+      await ensureCollection('children');
+    }
+
     const user = await getOrCreateUser(openid);
 
     switch (action) {
@@ -34,6 +39,18 @@ exports.main = async (event, context) => {
     return { code: 500, message: err.message, data: null };
   }
 };
+
+async function ensureCollection(name) {
+  try {
+    await db.createCollection(name);
+  } catch (err) {
+    const msg = err && err.message ? err.message : '';
+    // 已存在时忽略；其他错误继续抛出，避免掩盖权限/环境问题。
+    if (!/exist|already|duplicate/i.test(msg)) {
+      throw err;
+    }
+  }
+}
 
 async function getOrCreateUser(openid) {
   const userRes = await db.collection('users').where({ openid }).get();

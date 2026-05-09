@@ -15,6 +15,8 @@ exports.main = async (event, context) => {
   }
 
   try {
+    await ensureCollection('users');
+
     const token = generateToken();
     const userRes = await db.collection('users').where({ openid }).get();
     let user;
@@ -72,6 +74,18 @@ exports.main = async (event, context) => {
     return { code: 500, message: err.message, data: null };
   }
 };
+
+async function ensureCollection(name) {
+  try {
+    await db.createCollection(name);
+  } catch (err) {
+    const msg = err && err.message ? err.message : '';
+    // 已存在时忽略；其他错误继续抛出，避免掩盖权限/环境问题。
+    if (!/exist|already|duplicate/i.test(msg)) {
+      throw err;
+    }
+  }
+}
 
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
