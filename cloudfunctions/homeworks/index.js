@@ -140,15 +140,8 @@ async function createHomework(userId, data) {
   const batchRes = await db.collection('homework_batches').add({ data: batchData });
   const batchId = batchRes._id;
 
-  // 解析原始文本，拆分任务
-  const raw = (data.raw_text || '').trim();
-  let segments = raw
-    ? raw.split(/[\n\r]+|[。；;]/).filter(s => s.trim())
-    : [];
-
-  if (segments.length === 0) {
-    segments = ['完成老师布置的作业'];
-  }
+  // 解析作业条目。新版前端会传 task_items，老版本仍兼容 raw_text 按行拆分。
+  const items = normalizeTaskItems(data);
 
   // 数学自动批改答案：每行对应一个任务，仅数学科目启用。
   const answerSegments = data.subject === '数学' && data.check_answers
@@ -157,16 +150,18 @@ async function createHomework(userId, data) {
 
   // 创建任务
   const tasks = [];
-  for (let i = 0; i < segments.length; i++) {
-    const title = segments[i].trim().substring(0, 255);
-    const expectedAnswer = answerSegments[i] || null;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const title = item.text.substring(0, 255);
+    const subject = item.subject || data.subject || null;
+    const expectedAnswer = subject === '数学' ? (answerSegments[i] || null) : null;
     const taskData = {
       batch_id: batchId,
       user_id: userId,
       child_id: data.child_id,
       title,
-      task_type: data.subject === '数学' && expectedAnswer ? 'math' : 'other',
-      subject: data.subject || null,
+      task_type: subject === '数学' && expectedAnswer ? 'math' : 'other',
+      subject,
       expected_answer: expectedAnswer,
       expected_minutes: 10,
       check_mode: expectedAnswer ? 2 : 1,
@@ -186,6 +181,32 @@ async function createHomework(userId, data) {
     message: 'created',
     data: { _id: batchId, ...batchData, tasks },
   };
+}
+
+function normalizeTaskItems(data = {}) {
+  const allowedSubjects = ['语文', '数学', '英语', '其他'];
+  if (Array.isArray(data.task_items) && data.task_items.length > 0) {
+    const items = data.task_items
+      .map(item => ({
+        subject: allowedSubjects.includes(item.subject) ? item.subject : (data.subject || '其他'),
+        text: String(item.text || '').trim(),
+      }))
+      .filter(item => item.text);
+    if (items.length > 0) {
+      return items;
+    }
+  }
+
+  const raw = String(data.raw_text || '').trim();
+  const segments = raw
+    ? raw.split(/[\n\r]+|[。；;]/).map(s => s.trim()).filter(Boolean)
+    : [];
+
+  if (segments.length === 0) {
+    return [{ subject: data.subject || '其他', text: '完成老师布置的作业' }];
+  }
+
+  return segments.map(text => ({ subject: data.subject || '其他', text }));
 }
 
 async function recognizeHomeworkImage(userId, data = {}) {
@@ -232,6 +253,7 @@ function buildRecognitionFallback(reason) {
       subject: null,
       batch_date: null,
       raw_text: '',
+      recognized_items: [],
       confidence: 0,
       provider_message: reason === 'ai_not_configured' ? 'AI模型未配置' : 'AI识别失败，请手动填写',
     },
@@ -264,7 +286,7 @@ async function callVisionModel({ imageBuffer, mimeType }) {
         content: [
           {
             type: 'text',
-            text: '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","confidence":0到1}。如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。',
+            text: '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条作业内容"}],"confidence":0到1}。如果一张图片里有多个科目，请在 recognized_items 里分别列出每条作业的科目和内容；如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。',
           },
           {
             type: 'image_url',
@@ -338,18 +360,37 @@ function normalizeRecognitionResult(result = {}) {
   const allowedSubjects = ['语文', '数学', '英语', '其他'];
   const subject = allowedSubjects.includes(result.subject) ? result.subject : '其他';
   const batchDate = /^\d{4}-\d{2}-\d{2}$/.test(result.batch_date || '') ? result.batch_date : null;
-  const rawText = String(result.raw_text || '')
+  const rawLines = String(result.raw_text || '')
     .split(/[\n\r]+/)
     .map(line => line.trim())
-    .filter(Boolean)
-    .join('\n');
+    .filter(Boolean);
+  const rawText = rawLines.join('\n');
+  const recognizedItems = normalizeRecognitionItems(result.recognized_items, rawLines, subject);
 
   return {
     subject,
     batch_date: batchDate,
     raw_text: rawText,
+    recognized_items: recognizedItems,
     confidence: Number(result.confidence || 0),
   };
+}
+
+function normalizeRecognitionItems(items, rawLines, fallbackSubject) {
+  const allowedSubjects = ['语文', '数学', '英语', '其他'];
+  if (Array.isArray(items) && items.length > 0) {
+    const normalized = items
+      .map(item => ({
+        subject: allowedSubjects.includes(item.subject) ? item.subject : fallbackSubject,
+        text: String(item.text || '').trim(),
+      }))
+      .filter(item => item.text);
+    if (normalized.length > 0) {
+      return normalized;
+    }
+  }
+
+  return rawLines.map(text => ({ subject: fallbackSubject, text }));
 }
 
 async function updateHomework(userId, id, data) {

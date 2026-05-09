@@ -42,10 +42,16 @@ async function callHomeworks(action: string, data: any = {}) {
   return result;
 }
 
+export interface HomeworkRecognitionItem {
+  subject?: string;
+  text: string;
+}
+
 export interface HomeworkRecognitionResult {
   subject?: string;
   batch_date?: string;
   raw_text?: string;
+  recognized_items?: HomeworkRecognitionItem[];
   confidence?: number;
   provider_message?: string;
 }
@@ -62,6 +68,7 @@ export const homeworkApi = {
     subject?: string;
     input_source: 1 | 2 | 3 | 4;
     raw_text?: string;
+    task_items?: HomeworkRecognitionItem[];
     batch_date: string;
     file_asset_id?: string;
     check_answers?: string;
