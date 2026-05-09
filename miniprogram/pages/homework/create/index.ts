@@ -129,6 +129,7 @@ Page({
         }
       }
     } catch (e) {
+      console.error('图片识别失败', e);
       wx.showToast({ title: e instanceof Error ? e.message : '图片识别失败', icon: 'none' });
     } finally {
       this.setData({ recognizing: false });

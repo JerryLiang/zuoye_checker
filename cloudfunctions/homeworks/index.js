@@ -15,14 +15,14 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
   const openid = wxContext.OPENID;
 
-  // 获取用户
-  const userRes = await db.collection('users').where({ openid }).get();
-  if (userRes.data.length === 0) {
-    return { code: 401, message: '未登录', data: null };
+  if (!openid) {
+    return { code: 401, message: '获取openid失败', data: null };
   }
-  const user = userRes.data[0];
 
   try {
+    await ensureCollections(['users', 'children', 'homework_batches', 'task_items', 'task_submissions', 'check_results', 'file_assets']);
+    const user = await getOrCreateUser(openid);
+
     switch (action) {
       case 'list':
         return await listHomeworks(user._id, data);
@@ -43,6 +43,52 @@ exports.main = async (event, context) => {
     return { code: 500, message: err.message, data: null };
   }
 };
+
+async function ensureCollections(names) {
+  for (let i = 0; i < names.length; i++) {
+    await ensureCollection(names[i]);
+  }
+}
+
+async function ensureCollection(name) {
+  try {
+    await db.createCollection(name);
+  } catch (err) {
+    const msg = err && err.message ? err.message : '';
+    if (!/exist|already|duplicate/i.test(msg)) {
+      throw err;
+    }
+  }
+}
+
+async function getOrCreateUser(openid) {
+  const userRes = await db.collection('users').where({ openid }).get();
+  if (userRes.data.length > 0) {
+    return userRes.data[0];
+  }
+
+  const now = db.serverDate();
+  const res = await db.collection('users').add({
+    data: {
+      openid,
+      nickname: '家长用户',
+      avatar_url: null,
+      status: 1,
+      api_token: null,
+      created_at: now,
+      updated_at: now,
+    },
+  });
+
+  return {
+    _id: res._id,
+    openid,
+    nickname: '家长用户',
+    avatar_url: null,
+    status: 1,
+    api_token: null,
+  };
+}
 
 async function listHomeworks(userId, data = {}) {
   const where = { user_id: userId };
@@ -240,12 +286,19 @@ async function recognizeHomeworkImage(userId, data = {}) {
       data: normalizeRecognitionResult(recognition),
     };
   } catch (err) {
-    console.error('recognizeHomeworkImage failed:', err);
-    return buildRecognitionFallback('ai_recognition_failed');
+    console.error('recognizeHomeworkImage failed:', {
+      message: err && err.message,
+      baseUrl: HOMEWORK_AI_BASE_URL,
+      model: HOMEWORK_AI_MODEL,
+    });
+    return buildRecognitionFallback('ai_recognition_failed', err && err.message);
   }
 }
 
-function buildRecognitionFallback(reason) {
+function buildRecognitionFallback(reason, detail) {
+  const message = reason === 'ai_not_configured'
+    ? 'AI模型未配置'
+    : `AI识别失败${detail ? `：${String(detail).slice(0, 80)}` : '，请稍后重试'}`;
   return {
     code: 0,
     message: reason,
@@ -255,7 +308,7 @@ function buildRecognitionFallback(reason) {
       raw_text: '',
       recognized_items: [],
       confidence: 0,
-      provider_message: reason === 'ai_not_configured' ? 'AI模型未配置' : 'AI识别失败，请手动填写',
+      provider_message: message,
     },
   };
 }
@@ -276,6 +329,7 @@ async function callVisionModel({ imageBuffer, mimeType }) {
   const payload = {
     model: HOMEWORK_AI_MODEL,
     response_format: { type: 'json_object' },
+    enable_thinking: false,
     messages: [
       {
         role: 'system',
@@ -299,10 +353,28 @@ async function callVisionModel({ imageBuffer, mimeType }) {
   };
 
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY);
-  const content = res && res.choices && res.choices[0] && res.choices[0].message
-    ? res.choices[0].message.content
-    : '';
+  const message = res && res.choices && res.choices[0] ? res.choices[0].message : null;
+  const content = extractMessageContent(message);
   return parseModelJson(content);
+}
+
+function extractMessageContent(message) {
+  if (!message) return '';
+  if (typeof message.content === 'string') return message.content;
+  if (Array.isArray(message.content)) {
+    return message.content
+      .map(part => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part.text === 'string') return part.text;
+        if (part && typeof part.content === 'string') return part.content;
+        return '';
+      })
+      .join('\n');
+  }
+  if (typeof message.reasoning_content === 'string' && !message.content) {
+    return message.reasoning_content;
+  }
+  return '';
 }
 
 function postJson(url, payload, apiKey) {
@@ -344,14 +416,14 @@ function postJson(url, payload, apiKey) {
 }
 
 function parseModelJson(content) {
-  if (!content) return {};
+  if (!content) throw new Error('model returned empty content');
   if (typeof content === 'object') return content;
   const text = String(content).trim();
   try {
     return JSON.parse(text);
   } catch (_err) {
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return {};
+    if (!match) throw new Error('model returned non-json content');
     return JSON.parse(match[0]);
   }
 }
@@ -373,6 +445,7 @@ function normalizeRecognitionResult(result = {}) {
     raw_text: rawText,
     recognized_items: recognizedItems,
     confidence: Number(result.confidence || 0),
+    provider_message: result.provider_message || (recognizedItems.length === 0 ? '未识别到作业内容，请换一张更清晰的图片' : undefined),
   };
 }
 

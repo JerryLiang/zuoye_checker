@@ -11,13 +11,14 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
   const openid = wxContext.OPENID;
 
-  const userRes = await db.collection('users').where({ openid }).get();
-  if (userRes.data.length === 0) {
-    return { code: 401, message: '未登录', data: null };
+  if (!openid) {
+    return { code: 401, message: '获取openid失败', data: null };
   }
-  const user = userRes.data[0];
 
   try {
+    await ensureCollections(['users', 'children', 'file_assets']);
+    const user = await getOrCreateUser(openid);
+
     switch (action) {
       case 'create':
         return await createFileAsset(user._id, data);
@@ -28,6 +29,52 @@ exports.main = async (event, context) => {
     return { code: 500, message: err.message, data: null };
   }
 };
+
+async function ensureCollections(names) {
+  for (let i = 0; i < names.length; i++) {
+    await ensureCollection(names[i]);
+  }
+}
+
+async function ensureCollection(name) {
+  try {
+    await db.createCollection(name);
+  } catch (err) {
+    const msg = err && err.message ? err.message : '';
+    if (!/exist|already|duplicate/i.test(msg)) {
+      throw err;
+    }
+  }
+}
+
+async function getOrCreateUser(openid) {
+  const userRes = await db.collection('users').where({ openid }).get();
+  if (userRes.data.length > 0) {
+    return userRes.data[0];
+  }
+
+  const now = db.serverDate();
+  const res = await db.collection('users').add({
+    data: {
+      openid,
+      nickname: '家长用户',
+      avatar_url: null,
+      status: 1,
+      api_token: null,
+      created_at: now,
+      updated_at: now,
+    },
+  });
+
+  return {
+    _id: res._id,
+    openid,
+    nickname: '家长用户',
+    avatar_url: null,
+    status: 1,
+    api_token: null,
+  };
+}
 
 async function createFileAsset(userId, data) {
   const { fileID, biz_type, child_id, file_name, file_ext } = data;
