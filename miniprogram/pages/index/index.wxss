@@ -20,7 +20,7 @@
   opacity: 0.85;
 }
 
-/* 孩子选择滚动 */
+/* 学生选择滚动 */
 .child-scroll {
   white-space: nowrap;
 }

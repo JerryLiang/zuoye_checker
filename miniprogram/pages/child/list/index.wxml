@@ -7,9 +7,9 @@
   <!-- 空状态 -->
   <view wx:elif="{{children.length === 0}}" class="empty-state">
     <view class="empty-icon">👦</view>
-    <view class="empty-text">还没有添加孩子</view>
+    <view class="empty-text">还没有添加学生</view>
     <view class="empty-sub">点击下方按钮添加</view>
-    <view class="btn-add-empty" bindtap="goAdd">添加孩子</view>
+    <view class="btn-add-empty" bindtap="goAdd">添加学生</view>
   </view>
 
   <!-- 列表 -->
@@ -38,6 +38,6 @@
       </view>
     </view>
 
-    <view class="btn-add" bindtap="goAdd">+ 添加孩子</view>
+    <view class="btn-add" bindtap="goAdd">+ 添加学生</view>
   </block>
 </view>

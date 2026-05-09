@@ -18,13 +18,13 @@ Page({
             return;
         if (options.mode === 'onboarding') {
             this.setData({ isOnboarding: true });
-            wx.setNavigationBarTitle({ title: '添加第一个孩子' });
+            wx.setNavigationBarTitle({ title: '添加第一个学生' });
             wx.hideHomeButton?.();
         }
         if (options.id) {
             const id = options.id;
             this.setData({ editId: id, isEdit: true, isOnboarding: false });
-            wx.setNavigationBarTitle({ title: '编辑孩子' });
+            wx.setNavigationBarTitle({ title: '编辑学生' });
             this.loadChild(id);
         }
     },
@@ -92,7 +92,7 @@ Page({
             }
         }
         catch (e) {
-            console.error('保存孩子失败', e);
+            console.error('保存学生失败', e);
             wx.showToast({ title: e?.message || '操作失败', icon: 'none' });
         }
     },

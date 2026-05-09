@@ -91,7 +91,7 @@ async function getWeeklyReport(userId, data) {
     .get();
 
   if (childRes.data.length === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   const weekStart = isDateString(start_date) ? start_date : getWeekStart();

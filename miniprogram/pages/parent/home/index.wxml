@@ -6,13 +6,13 @@
       <view>
         <view class="parent-title">家长管理台</view>
         <view class="parent-sub" wx:if="{{currentChild}}">正在管理：{{currentChild.name}}</view>
-        <view class="parent-sub" wx:else>请先添加孩子</view>
+        <view class="parent-sub" wx:else>请先添加学生</view>
       </view>
-      <view class="role-switch" bindtap="goChildMode">孩子端</view>
+      <view class="role-switch" bindtap="goChildMode">学生端</view>
     </view>
 
     <view class="card" wx:if="{{children.length > 0}}">
-      <view class="section-title">切换孩子</view>
+      <view class="section-title">切换学生</view>
       <scroll-view scroll-x class="child-scroll">
         <view class="child-pills">
           <view wx:for="{{children}}" wx:key="_id" class="child-pill {{currentChildId === item._id ? 'active' : ''}}" data-id="{{item._id}}" bindtap="onSelectChild">
@@ -49,11 +49,11 @@
         </view>
         <view class="action-item" bindtap="goChildList">
           <view class="action-icon green">👶</view>
-          <text>孩子管理</text>
+          <text>学生管理</text>
         </view>
         <view class="action-item" bindtap="goAddChild">
           <view class="action-icon orange">➕</view>
-          <text>添加孩子</text>
+          <text>添加学生</text>
         </view>
       </view>
     </view>

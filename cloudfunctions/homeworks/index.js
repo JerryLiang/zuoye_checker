@@ -160,13 +160,13 @@ async function createHomework(userId, data) {
     return { code: 400, message: '缺少必要参数', data: null };
   }
 
-  // 验证孩子归属，防止给别人的 child_id 创建作业。
+  // 验证学生归属，防止给别人的 child_id 创建作业。
   const childRes = await db.collection('children')
     .where({ _id: data.child_id, user_id: userId })
     .get();
 
   if (childRes.data.length === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   // 创建作业批次

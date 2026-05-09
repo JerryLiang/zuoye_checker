@@ -4,7 +4,7 @@ const child_1 = require("../../api/child");
 const parentAuth_1 = require("../../utils/parentAuth");
 Page({
     data: {
-        nickname: '孩子端',
+        nickname: '学生端',
         childCount: 0,
         children: [],
     },

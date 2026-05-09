@@ -9,12 +9,12 @@
     <view class="hero-banner">
       <view class="hero-title">{{greeting}}，家长</view>
       <view class="hero-sub" wx:if="{{currentChild}}">{{currentChild.name}} 的学习之旅</view>
-      <view class="hero-sub" wx:else>请先添加孩子信息</view>
+      <view class="hero-sub" wx:else>请先添加学生信息</view>
     </view>
 
-    <!-- 孩子切换 -->
+    <!-- 学生切换 -->
     <view class="card" wx:if="{{children.length > 0}}">
-      <view class="section-title">切换孩子</view>
+      <view class="section-title">切换学生</view>
       <scroll-view scroll-x class="child-scroll">
         <view class="child-pills">
           <view
@@ -30,12 +30,12 @@
       </scroll-view>
     </view>
 
-    <!-- 无孩子提示：正常情况下会被强制 onboarding 接管 -->
+    <!-- 无学生提示：正常情况下会被强制 onboarding 接管 -->
     <view class="card empty-state" wx:if="{{children.length === 0}}">
       <view class="empty-icon">👋</view>
-      <view class="empty-text">先添加第一个孩子</view>
+      <view class="empty-text">先添加第一个学生</view>
       <view class="empty-sub">添加后就可以创建作业、查看任务和学习周报</view>
-      <view class="btn-primary empty-action" bindtap="goAddChild">立即添加孩子</view>
+      <view class="btn-primary empty-action" bindtap="goAddChild">立即添加学生</view>
     </view>
 
     <!-- 今日任务概览 -->
@@ -77,7 +77,7 @@
       </view>
     </view>
 
-    <!-- 孩子端快捷操作 -->
+    <!-- 学生端快捷操作 -->
     <view class="card" wx:if="{{currentChild}}">
       <view class="section-title">快捷操作</view>
       <view class="action-grid">

@@ -28,7 +28,7 @@ Page({
   async chooseSubmitImage() {
     const app = getApp<IAppOption>();
     if (!app.globalData.currentChildId) {
-      wx.showToast({ title: '请先添加孩子', icon: 'none' });
+      wx.showToast({ title: '请先添加学生', icon: 'none' });
       wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
       return;
     }
@@ -58,7 +58,7 @@ Page({
 
     const app = getApp<IAppOption>();
     if (!app.globalData.currentChildId) {
-      wx.showToast({ title: '请先添加孩子', icon: 'none' });
+      wx.showToast({ title: '请先添加学生', icon: 'none' });
       wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
       return;
     }

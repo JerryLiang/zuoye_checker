@@ -96,7 +96,7 @@ async function getChild(userId, id) {
     .get();
 
   if (res.data.length === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   return { code: 0, message: 'ok', data: res.data[0] };
@@ -138,7 +138,7 @@ async function updateChild(userId, id, data) {
     .update({ data: updateData });
 
   if (res.stats.updated === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   return { code: 0, message: 'updated', data: { _id: id, ...data } };
@@ -150,7 +150,7 @@ async function deleteChild(userId, id) {
     .remove();
 
   if (res.stats.removed === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   return { code: 0, message: 'deleted', data: null };

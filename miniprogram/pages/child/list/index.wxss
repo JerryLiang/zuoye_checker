@@ -43,7 +43,7 @@
   border-radius: 40rpx;
 }
 
-/* 孩子卡片 */
+/* 学生卡片 */
 .child-card {
   background: #fff;
   border-radius: 20rpx;

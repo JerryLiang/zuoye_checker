@@ -37,13 +37,13 @@ async function getTodayTasks(userId, data) {
     return { code: 400, message: '缺少child_id', data: null };
   }
 
-  // 验证孩子归属
+  // 验证学生归属
   const childRes = await db.collection('children')
     .where({ _id: child_id, user_id: userId })
     .get();
 
   if (childRes.data.length === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   // 获取今天的日期（如果没有指定）
@@ -77,13 +77,13 @@ async function submitTask(userId, taskId, data) {
     return { code: 400, message: '缺少必要参数', data: null };
   }
 
-  // 验证孩子归属
+  // 验证学生归属
   const childRes = await db.collection('children')
     .where({ _id: child_id, user_id: userId })
     .get();
 
   if (childRes.data.length === 0) {
-    return { code: 404, message: '孩子不存在', data: null };
+    return { code: 404, message: '学生不存在', data: null };
   }
 
   // 获取任务并验证任务归属

@@ -5,7 +5,7 @@ const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
 exports.uploadApi = {
     async upload(filePath, bizType, childId) {
         if (!childId) {
-            throw new Error('缺少孩子信息');
+            throw new Error('缺少学生信息');
         }
         const timestamp = Date.now();
         const ext = (filePath.split('.').pop() || 'jpg').toLowerCase();

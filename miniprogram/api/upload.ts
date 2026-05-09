@@ -8,7 +8,7 @@ const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
 export const uploadApi = {
   async upload(filePath: string, bizType: 'homework_input' | 'task_submission', childId: string) {
     if (!childId) {
-      throw new Error('缺少孩子信息');
+      throw new Error('缺少学生信息');
     }
 
     const timestamp = Date.now();
