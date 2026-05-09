@@ -26,7 +26,10 @@ export const authApi = {
       },
     });
 
-    const result = res.result as { code: number; message: string; data: { token: string; user: { id: string } } };
+    const result = res.result as { code: number; message: string; data: { token: string; user: { id: string } } } | undefined;
+    if (!result) {
+      throw new Error('登录云函数无返回');
+    }
     if (result.code !== 0) {
       throw new Error(result.message || '登录失败');
     }

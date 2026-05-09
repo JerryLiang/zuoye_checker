@@ -29,9 +29,8 @@ Page({
     },
     async ensureLogin() {
         const app = getApp();
-        if (app.globalData.userId && app.globalData.token) {
-            return;
-        }
+        // 这里必须强制调用 auth-login：本地缓存的 token/userId 可能是旧的，
+        // 但云端 users 记录不存在时 children 云函数会返回 401 未登录。
         const loginRes = await auth_1.authApi.wechatLogin({ nickname: '家长用户' });
         app.globalData.token = loginRes.data.token;
         app.globalData.userId = loginRes.data.user.id;
@@ -102,8 +101,9 @@ Page({
                 }, 500);
             }
         }
-        catch (_e) {
-            wx.showToast({ title: '操作失败', icon: 'none' });
+        catch (e) {
+            console.error('保存孩子失败', e);
+            wx.showToast({ title: e?.message || '操作失败', icon: 'none' });
         }
     },
 });

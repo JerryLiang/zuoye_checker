@@ -22,6 +22,9 @@ exports.authApi = {
             },
         });
         const result = res.result;
+        if (!result) {
+            throw new Error('登录云函数无返回');
+        }
         if (result.code !== 0) {
             throw new Error(result.message || '登录失败');
         }

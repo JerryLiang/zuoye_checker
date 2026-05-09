@@ -7,6 +7,9 @@ async function callChildren(action, data = {}) {
         data: { action, ...data },
     });
     const result = res.result;
+    if (!result) {
+        throw new Error('children云函数无返回');
+    }
     if (result.code !== 0) {
         throw new Error(result.message || '请求失败');
     }
