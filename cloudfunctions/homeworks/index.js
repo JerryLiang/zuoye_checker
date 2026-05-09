@@ -325,6 +325,7 @@ async function callVisionModel({ imageBuffer, mimeType }) {
   const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
   const endpoint = `${baseUrl}/chat/completions`;
   const imageDataUrl = `data:${mimeType};base64,${Buffer.from(imageBuffer).toString('base64')}`;
+  const startedAt = Date.now();
 
   const payload = {
     model: HOMEWORK_AI_MODEL,
@@ -352,10 +353,27 @@ async function callVisionModel({ imageBuffer, mimeType }) {
     temperature: 0.1,
   };
 
+  console.log('[homeworks.ai.request]', {
+    endpoint,
+    model: HOMEWORK_AI_MODEL,
+    mimeType,
+    imageBytes: imageBuffer.length,
+    messageCount: payload.messages.length,
+  });
+
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY);
   const message = res && res.choices && res.choices[0] ? res.choices[0].message : null;
   const content = extractMessageContent(message);
-  return parseModelJson(content);
+  console.log('[homeworks.ai.message]', {
+    durationMs: Date.now() - startedAt,
+    responseId: res && res.id,
+    finishReason: res && res.choices && res.choices[0] ? res.choices[0].finish_reason : undefined,
+    usage: res && res.usage,
+    contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
+  });
+  const parsed = parseModelJson(content);
+  console.log('[homeworks.ai.parsed]', parsed);
+  return parsed;
 }
 
 function extractMessageContent(message) {
@@ -397,6 +415,11 @@ function postJson(url, payload, apiKey) {
       res.setEncoding('utf8');
       res.on('data', chunk => { text += chunk; });
       res.on('end', () => {
+        console.log('[homeworks.ai.http_response]', {
+          statusCode: res.statusCode,
+          bodyLength: text.length,
+          bodyPreview: text.slice(0, 3000),
+        });
         if (res.statusCode < 200 || res.statusCode >= 300) {
           reject(new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`));
           return;
