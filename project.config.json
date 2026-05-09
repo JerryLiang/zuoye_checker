@@ -39,7 +39,9 @@
     "compileWorklet": false,
     "localPlugins": false,
     "disableUseStrict": false,
-    "useCompilerPlugins": ["typescript"],
+    "useCompilerPlugins": [
+      "typescript"
+    ],
     "swc": false,
     "disableSWC": true
   },

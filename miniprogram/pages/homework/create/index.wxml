@@ -39,7 +39,9 @@
       <text class="form-label">作业内容</text>
       <textarea
         class="textarea-field"
-        placeholder="请输入作业内容，每行一个任务&#10;例如：&#10;抄写生词3遍&#10;做练习册第5页"
+        placeholder="请输入作业内容，每行一个任务;例如：\n
+        抄写生词3遍
+        做练习册第5页"
         bindinput="onTextInput"
         maxlength="-1"
         value="{{rawText}}"
