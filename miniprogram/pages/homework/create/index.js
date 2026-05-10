@@ -130,7 +130,7 @@ Page({
         }
     },
     async compressImageForRecognition(filePath) {
-        const maxBytes = 384 * 1024;
+        const maxBytes = 700 * 1024;
         const getSize = async (path) => {
             const info = await wx.getFileInfo({ filePath: path });
             return info.size || 0;
@@ -140,8 +140,8 @@ Page({
         if (currentSize <= maxBytes)
             return currentPath;
         const imageInfo = await wx.getImageInfo({ src: currentPath });
-        const maxWidths = [1600, 1400, 1200, 1000, 900, 800];
-        const qualities = [0.7, 0.62, 0.55, 0.48, 0.42, 0.36];
+        const maxWidths = [1800, 1600, 1400, 1200, 1000, 900];
+        const qualities = [0.82, 0.76, 0.7, 0.64, 0.58, 0.52];
         for (const maxWidth of maxWidths) {
             const scale = Math.min(1, maxWidth / Math.max(imageInfo.width, imageInfo.height));
             const targetWidth = Math.max(1, Math.round(imageInfo.width * scale));
@@ -154,7 +154,7 @@ Page({
                     return currentPath;
             }
         }
-        const compressed = await wx.compressImage({ src: currentPath, quality: 20 });
+        const compressed = await wx.compressImage({ src: currentPath, quality: 40 });
         return compressed.tempFilePath;
     },
     drawImageToJpeg(filePath, width, height, quality) {

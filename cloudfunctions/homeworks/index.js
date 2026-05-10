@@ -351,7 +351,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   }
 
   const imageBase64 = Buffer.from(modelImageBuffer).toString('base64');
-  const promptText = '请从图片中识别作业信息，返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条作业内容"}],"confidence":0到1}。如果一张图片里有多个科目，请在 recognized_items 里分别列出每条作业的科目和内容；如果日期无法判断，batch_date 为空字符串；如果科目无法判断，subject 为其他。';
+  const promptText = '请从图片中逐字识别真实作业文字，并返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条真实作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条真实作业内容"}],"confidence":0到1,"provider_message":"可选说明"}。严格要求：1）只能输出图片里确实能看清的文字，不要根据常见作业格式补全、改写或猜测；2）看不清的少量字用[?]标记；3）如果大部分文字无法辨认，raw_text为空字符串、recognized_items为空数组、confidence低于0.3，并在provider_message说明unclear_image；4）如果一张图片里有多个科目，请在recognized_items里分别列出每条作业的科目和内容；5）如果日期无法判断，batch_date为空字符串；如果科目无法判断，subject为其他。';
   const imageInput = buildImageInput({ baseUrl, imageBase64, mimeType: modelMimeType, promptText });
   const startedAt = Date.now();
 
@@ -361,7 +361,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
     messages: [
       {
         role: 'system',
-        content: '你是作业图片识别助手。只输出 JSON，不要输出 Markdown。识别小学生作业图片中的科目、日期和作业内容。',
+        content: '你是严格的作业图片 OCR 助手。只输出 JSON，不要输出 Markdown。必须逐字识别图片中的真实文字；不要猜测、补全、改写或编造看不清的内容。',
       },
       {
         role: 'user',
@@ -401,7 +401,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
 }
 
 async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs }) {
-  const maxBytes = Number(process.env.HOMEWORK_AI_TEXT_IMAGE_MAX_BYTES || 384 * 1024);
+  const maxBytes = Number(process.env.HOMEWORK_AI_TEXT_IMAGE_MAX_BYTES || 700 * 1024);
   if (imageBuffer.length <= maxBytes) {
     logAiDebug('image_prepare', {
       skipped: true,
@@ -420,12 +420,12 @@ async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs })
   }
 
   const attempts = [
-    { width: 1600, quality: 70 },
-    { width: 1400, quality: 65 },
-    { width: 1200, quality: 60 },
-    { width: 1000, quality: 55 },
-    { width: 900, quality: 50 },
-    { width: 800, quality: 45 },
+    { width: 1800, quality: 82 },
+    { width: 1600, quality: 76 },
+    { width: 1400, quality: 70 },
+    { width: 1200, quality: 64 },
+    { width: 1000, quality: 58 },
+    { width: 900, quality: 52 },
   ];
 
   let bestBuffer = imageBuffer;
