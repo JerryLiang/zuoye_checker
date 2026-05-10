@@ -397,7 +397,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
 }
 
 async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs }) {
-  const maxBytes = Number(process.env.HOMEWORK_AI_TEXT_IMAGE_MAX_BYTES || 512 * 1024);
+  const maxBytes = Number(process.env.HOMEWORK_AI_TEXT_IMAGE_MAX_BYTES || 256 * 1024);
   if (imageBuffer.length <= maxBytes) {
     logAiDebug('image_prepare', {
       skipped: true,
@@ -416,12 +416,14 @@ async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs })
   }
 
   const attempts = [
-    { width: 1600, quality: 70 },
-    { width: 1400, quality: 65 },
-    { width: 1200, quality: 60 },
-    { width: 1000, quality: 55 },
-    { width: 900, quality: 50 },
+    { width: 1200, quality: 55 },
+    { width: 1000, quality: 50 },
     { width: 800, quality: 45 },
+    { width: 640, quality: 40 },
+    { width: 520, quality: 35 },
+    { width: 420, quality: 30 },
+    { width: 360, quality: 25 },
+    { width: 320, quality: 20 },
   ];
 
   let bestBuffer = imageBuffer;
