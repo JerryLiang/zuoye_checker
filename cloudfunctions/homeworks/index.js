@@ -286,11 +286,15 @@ async function recognizeHomeworkImage(userId, data = {}) {
     const imageBuffer = downloadRes.fileContent;
     const mimeType = getImageMimeType(asset.file_ext);
     const recognition = await callVisionModel({ imageBuffer, mimeType, debugLogs });
+    const normalized = normalizeRecognitionResult(recognition);
+    if (!normalized.recognized_items || normalized.recognized_items.length === 0) {
+      normalized.debug_logs = debugLogs;
+    }
 
     return {
       code: 0,
       message: 'recognized',
-      data: normalizeRecognitionResult(recognition),
+      data: normalized,
     };
   } catch (err) {
     logAiDebug('error', {
