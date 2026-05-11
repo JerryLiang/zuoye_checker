@@ -14,6 +14,7 @@
     "pages/homework/detail/index",
     "pages/report/weekly/index"
   ],
+  "subPackages": [],
   "window": {
     "navigationBarTitleText": "作业小卫士",
     "navigationBarBackgroundColor": "#4F6EF7",
