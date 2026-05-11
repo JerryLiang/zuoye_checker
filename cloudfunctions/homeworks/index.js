@@ -341,7 +341,8 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   let modelImageBuffer = imageBuffer;
   let modelMimeType = mimeType;
   const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
-  const shouldUseTextBase64 = configuredFormat === 'text_base64';
+  const shouldUseTextBase64 = configuredFormat === 'text_base64'
+    || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
 
   if (shouldUseTextBase64) {
     const compressed = await compressImageForTextPayload({ imageBuffer, mimeType, debugLogs });
@@ -456,7 +457,8 @@ async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs })
 
 function buildImageInput({ baseUrl, imageBase64, mimeType, promptText }) {
   const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
-  const shouldUseTextBase64 = configuredFormat === 'text_base64';
+  const shouldUseTextBase64 = configuredFormat === 'text_base64'
+    || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
 
   if (shouldUseTextBase64) {
     return {
