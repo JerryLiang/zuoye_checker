@@ -341,8 +341,22 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   let modelImageBuffer = imageBuffer;
   let modelMimeType = mimeType;
   const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
-  const shouldUseTextBase64 = configuredFormat === 'text_base64'
-    || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
+  const isDeepSeekOfficialApi = /api\.deepseek\.com/i.test(baseUrl || '');
+  const shouldUseTextBase64 = configuredFormat === 'text_base64';
+
+  if (!configuredFormat && isDeepSeekOfficialApi) {
+    const err = new Error('当前 DeepSeek API 返回 60万+ prompt_tokens，说明图片 base64 被当成普通文本处理，不是视觉输入；请配置真正支持图片的 OCR/视觉接口，或显式设置 HOMEWORK_AI_IMAGE_FORMAT=openai_image_url 后再测试该接口是否支持图片。');
+    err.code = 'deepseek_text_only_image_payload';
+    logAiDebug('unsupported_image_payload', {
+      endpoint,
+      model: HOMEWORK_AI_MODEL,
+      originalImageBytes: imageBuffer.length,
+      configuredFormat: configuredFormat || null,
+      reason: 'deepseek_official_api_treats_base64_as_text_not_vision_input',
+      nextStep: 'use_real_vision_or_ocr_provider',
+    }, debugLogs);
+    throw err;
+  }
 
   if (shouldUseTextBase64) {
     const compressed = await compressImageForTextPayload({ imageBuffer, mimeType, debugLogs });
@@ -457,8 +471,7 @@ async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs })
 
 function buildImageInput({ baseUrl, imageBase64, mimeType, promptText }) {
   const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
-  const shouldUseTextBase64 = configuredFormat === 'text_base64'
-    || (!configuredFormat && /api\.deepseek\.com/i.test(baseUrl || ''));
+  const shouldUseTextBase64 = configuredFormat === 'text_base64';
 
   if (shouldUseTextBase64) {
     return {
