@@ -14,7 +14,8 @@ const _ = db.command;
 
 const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://api.deepseek.com';
 const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'deepseek-v4-flash';
-const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.BAILIAN_CODING_PLAN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+const HOMEWORK_AI_PROVIDER = String(process.env.HOMEWORK_AI_PROVIDER || '').toLowerCase();
 
 exports.main = async (event, context) => {
   const { action, data, id } = event;
@@ -337,7 +338,8 @@ function getImageMimeType(fileExt = '') {
 
 async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const baseUrl = HOMEWORK_AI_BASE_URL.replace(/\/$/, '');
-  const endpoint = `${baseUrl}/chat/completions`;
+  const provider = resolveAiProvider(baseUrl);
+  const endpoint = buildAiEndpoint(baseUrl, provider);
   let modelImageBuffer = imageBuffer;
   let modelMimeType = mimeType;
   const configuredFormat = String(process.env.HOMEWORK_AI_IMAGE_FORMAT || '').toLowerCase();
@@ -369,6 +371,19 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const imageInput = buildImageInput({ baseUrl, imageBase64, mimeType: modelMimeType, promptText });
   const startedAt = Date.now();
 
+  if (provider === 'anthropic') {
+    return await callAnthropicVisionModel({
+      endpoint,
+      imageBase64,
+      mimeType: modelMimeType,
+      promptText,
+      debugLogs,
+      startedAt,
+      imageBytes: modelImageBuffer.length,
+      originalImageBytes: imageBuffer.length,
+    });
+  }
+
   const payload = {
     model: HOMEWORK_AI_MODEL,
     response_format: { type: 'json_object' },
@@ -387,6 +402,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
 
   logAiDebug('request', {
     endpoint,
+    provider,
     model: HOMEWORK_AI_MODEL,
     mimeType: modelMimeType,
     originalImageBytes: imageBuffer.length,
@@ -406,6 +422,86 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
     durationMs: Date.now() - startedAt,
     responseId: res && res.id,
     finishReason: res && res.choices && res.choices[0] ? res.choices[0].finish_reason : undefined,
+    usage: res && res.usage,
+    contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
+  }, debugLogs);
+  const parsed = parseModelJson(content);
+  logAiDebug('parsed', parsed, debugLogs);
+  return parsed;
+}
+
+
+function resolveAiProvider(baseUrl) {
+  const provider = HOMEWORK_AI_PROVIDER.replace(/[-_]/g, '').toLowerCase();
+  if (provider === 'anthropic' || provider === 'codeplan' || provider === 'dashscopecodeplan') {
+    return 'anthropic';
+  }
+  if (HOMEWORK_AI_PROVIDER) return HOMEWORK_AI_PROVIDER;
+  if (/\/apps\/anthropic/i.test(baseUrl)) return 'anthropic';
+  return 'openai_chat';
+}
+
+function buildAiEndpoint(baseUrl, provider) {
+  if (provider === 'anthropic') {
+    const parsed = new URL(baseUrl);
+    if (/\/v1\/messages$/i.test(parsed.pathname)) return baseUrl;
+    if (/^\/v1\/?$/i.test(parsed.pathname) && /coding(-intl)?\.dashscope\.aliyuncs\.com/i.test(parsed.hostname)) {
+      return `${parsed.origin}/apps/anthropic/v1/messages`;
+    }
+    if (/\/v1$/i.test(baseUrl)) return `${baseUrl}/messages`;
+    return `${baseUrl}/v1/messages`;
+  }
+  if (/\/chat\/completions$/i.test(baseUrl)) return baseUrl;
+  return `${baseUrl}/chat/completions`;
+}
+
+async function callAnthropicVisionModel({ endpoint, imageBase64, mimeType, promptText, debugLogs, startedAt, imageBytes, originalImageBytes }) {
+  const payload = {
+    model: HOMEWORK_AI_MODEL,
+    max_tokens: Number(process.env.HOMEWORK_AI_MAX_TOKENS || 2048),
+    system: '你是严格的作业图片 OCR 助手。只输出 JSON，不要输出 Markdown。必须逐字识别图片中的真实文字；不要猜测、补全、改写或编造看不清的内容。',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: promptText },
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mimeType,
+              data: imageBase64,
+            },
+          },
+        ],
+      },
+    ],
+    temperature: 0.1,
+  };
+
+  logAiDebug('request', {
+    endpoint,
+    provider: 'anthropic',
+    model: HOMEWORK_AI_MODEL,
+    mimeType,
+    originalImageBytes,
+    imageBytes,
+    base64Length: imageBase64.length,
+    imageFormat: 'anthropic_base64_image',
+    messageCount: payload.messages.length,
+    userContentType: 'array',
+    maxTokens: payload.max_tokens,
+  }, debugLogs);
+
+  const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY, debugLogs, {
+    Authorization: `Bearer ${HOMEWORK_AI_API_KEY}`,
+    'anthropic-version': '2023-06-01',
+  });
+  const content = extractAnthropicContent(res);
+  logAiDebug('message', {
+    durationMs: Date.now() - startedAt,
+    responseId: res && res.id,
+    stopReason: res && res.stop_reason,
     usage: res && res.usage,
     contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
   }, debugLogs);
@@ -537,7 +633,7 @@ function extractMessageContent(message) {
   return '';
 }
 
-function postJson(url, payload, apiKey, debugLogs) {
+function postJson(url, payload, apiKey, debugLogs, extraHeaders = null) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const body = JSON.stringify(payload);
@@ -551,6 +647,7 @@ function postJson(url, payload, apiKey, debugLogs) {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
         Authorization: `Bearer ${apiKey}`,
+        ...(extraHeaders || {}),
       },
     }, (res) => {
       let text = '';
@@ -581,6 +678,24 @@ function postJson(url, payload, apiKey, debugLogs) {
     req.write(body);
     req.end();
   });
+}
+
+
+function extractAnthropicContent(res) {
+  if (!res) return '';
+  if (typeof res.content === 'string') return res.content;
+  if (Array.isArray(res.content)) {
+    return res.content
+      .map(part => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part.text === 'string') return part.text;
+        if (part && typeof part.content === 'string') return part.content;
+        return '';
+      })
+      .join('\n');
+  }
+  if (res.message) return extractMessageContent(res.message);
+  return '';
 }
 
 function parseModelJson(content) {
