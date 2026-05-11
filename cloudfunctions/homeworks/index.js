@@ -1,5 +1,6 @@
 const cloud = require('wx-server-sdk');
 const https = require('https');
+const crypto = require('crypto');
 let sharp = null;
 try {
   sharp = require('sharp');
@@ -16,6 +17,9 @@ const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://api.de
 const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'deepseek-v4-flash';
 const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.BAILIAN_CODING_PLAN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
 const HOMEWORK_AI_PROVIDER = String(process.env.HOMEWORK_AI_PROVIDER || '').toLowerCase();
+const TENCENT_SECRET_ID = process.env.TENCENT_SECRET_ID || '';
+const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY || '';
+const TENCENT_OCR_REGION = process.env.TENCENT_OCR_REGION || 'ap-guangzhou';
 
 exports.main = async (event, context) => {
   const { action, data, id } = event;
@@ -278,7 +282,7 @@ async function recognizeHomeworkImage(userId, data = {}) {
   }
 
   const asset = assetRes.data[0];
-  if (!HOMEWORK_AI_MODEL || !HOMEWORK_AI_API_KEY) {
+  if (!hasRecognitionProviderConfig()) {
     return buildRecognitionFallback('ai_not_configured', null, debugLogs);
   }
 
@@ -286,7 +290,9 @@ async function recognizeHomeworkImage(userId, data = {}) {
     const downloadRes = await cloud.downloadFile({ fileID: asset.fileID });
     const imageBuffer = downloadRes.fileContent;
     const mimeType = getImageMimeType(asset.file_ext);
-    const recognition = await callVisionModel({ imageBuffer, mimeType, debugLogs });
+    const recognition = resolveAiProvider(HOMEWORK_AI_BASE_URL.replace(/\/$/, '')) === 'tencent_ocr'
+      ? await callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs })
+      : await callVisionModel({ imageBuffer, mimeType, debugLogs });
     const normalized = normalizeRecognitionResult(recognition);
     if (!normalized.recognized_items || normalized.recognized_items.length === 0) {
       normalized.debug_logs = debugLogs;
@@ -307,6 +313,15 @@ async function recognizeHomeworkImage(userId, data = {}) {
     }, debugLogs);
     return buildRecognitionFallback('ai_recognition_failed', err && err.message, debugLogs);
   }
+}
+
+
+function hasRecognitionProviderConfig() {
+  const provider = resolveAiProvider(HOMEWORK_AI_BASE_URL.replace(/\/$/, ''));
+  if (provider === 'tencent_ocr') {
+    return Boolean(TENCENT_SECRET_ID && TENCENT_SECRET_KEY);
+  }
+  return Boolean(HOMEWORK_AI_MODEL && HOMEWORK_AI_API_KEY);
 }
 
 function buildRecognitionFallback(reason, detail, debugLogs = []) {
@@ -334,6 +349,178 @@ function getImageMimeType(fileExt = '') {
   if (ext === 'webp') return 'image/webp';
   if (ext === 'heic') return 'image/heic';
   return 'image/jpeg';
+}
+
+
+async function callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs }) {
+  const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+  const scene = String(process.env.TENCENT_OCR_SCENE || '').trim();
+  const payload = {
+    ImageBase64: imageBase64,
+  };
+  if (scene) payload.Scene = scene;
+
+  const endpoint = 'https://ocr.tencentcloudapi.com';
+  const startedAt = Date.now();
+  logAiDebug('request', {
+    endpoint,
+    provider: 'tencent_ocr',
+    action: 'GeneralHandwritingOCR',
+    region: TENCENT_OCR_REGION,
+    mimeType,
+    imageBytes: imageBuffer.length,
+    base64Length: imageBase64.length,
+    scene: scene || null,
+  }, debugLogs);
+
+  const res = await postTencentCloudJson({
+    endpoint,
+    service: 'ocr',
+    action: 'GeneralHandwritingOCR',
+    version: '2018-11-19',
+    region: TENCENT_OCR_REGION,
+    payload,
+    debugLogs,
+  });
+  const response = res && res.Response ? res.Response : res;
+  if (response && response.Error) {
+    const err = new Error(`${response.Error.Code}: ${response.Error.Message}`);
+    err.responseBody = JSON.stringify({ Error: response.Error, RequestId: response.RequestId }).slice(0, 3000);
+    throw err;
+  }
+
+  const detections = Array.isArray(response && response.TextDetections) ? response.TextDetections : [];
+  const lines = detections
+    .map(item => String(item && item.DetectedText || '').trim())
+    .filter(Boolean);
+  const confidenceValues = detections
+    .map(item => Number(item && item.Confidence))
+    .filter(value => Number.isFinite(value));
+  const avgConfidence = confidenceValues.length > 0
+    ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length / 100
+    : (lines.length > 0 ? 0.6 : 0);
+
+  const result = {
+    subject: '其他',
+    batch_date: '',
+    raw_text: lines.join('\n'),
+    recognized_items: lines.map(text => ({ subject: '其他', text })),
+    confidence: Math.max(0, Math.min(1, Number(avgConfidence.toFixed(3)))),
+    provider_message: lines.length > 0 ? 'tencent_general_handwriting_ocr' : 'unclear_image',
+  };
+
+  logAiDebug('message', {
+    durationMs: Date.now() - startedAt,
+    requestId: response && response.RequestId,
+    angle: response && response.Angle,
+    lineCount: lines.length,
+    confidence: result.confidence,
+    rawTextPreview: result.raw_text.slice(0, 1000),
+  }, debugLogs);
+  logAiDebug('parsed', result, debugLogs);
+  return result;
+}
+
+function postTencentCloudJson({ endpoint, service, action, version, region, payload, debugLogs }) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(endpoint);
+    const body = JSON.stringify(payload);
+    const timestamp = Math.floor(Date.now() / 1000);
+    const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
+    const authorization = buildTencentCloudAuthorization({
+      secretId: TENCENT_SECRET_ID,
+      secretKey: TENCENT_SECRET_KEY,
+      service,
+      host: parsed.hostname,
+      payload: body,
+      timestamp,
+      date,
+    });
+
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: parsed.port || 443,
+      path: parsed.pathname || '/',
+      method: 'POST',
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        Host: parsed.hostname,
+        Authorization: authorization,
+        'X-TC-Action': action,
+        'X-TC-Version': version,
+        'X-TC-Timestamp': String(timestamp),
+        'X-TC-Region': region,
+      },
+    }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { text += chunk; });
+      res.on('end', () => {
+        logAiDebug('http_response', {
+          provider: 'tencent_ocr',
+          statusCode: res.statusCode,
+          bodyLength: text.length,
+          bodyPreview: text.slice(0, 3000),
+        }, debugLogs);
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          const error = new Error(`tencent ocr api status ${res.statusCode}: ${text.slice(0, 500)}`);
+          error.statusCode = res.statusCode;
+          error.responseBody = text.slice(0, 3000);
+          reject(error);
+          return;
+        }
+        try {
+          resolve(JSON.parse(text));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('tencent ocr api timeout')));
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function buildTencentCloudAuthorization({ secretId, secretKey, service, host, payload, timestamp, date }) {
+  const algorithm = 'TC3-HMAC-SHA256';
+  const httpRequestMethod = 'POST';
+  const canonicalUri = '/';
+  const canonicalQueryString = '';
+  const canonicalHeaders = `content-type:application/json\nhost:${host}\n`;
+  const signedHeaders = 'content-type;host';
+  const hashedRequestPayload = sha256Hex(payload);
+  const canonicalRequest = [
+    httpRequestMethod,
+    canonicalUri,
+    canonicalQueryString,
+    canonicalHeaders,
+    signedHeaders,
+    hashedRequestPayload,
+  ].join('\n');
+  const credentialScope = `${date}/${service}/tc3_request`;
+  const stringToSign = [
+    algorithm,
+    String(timestamp),
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n');
+  const secretDate = hmacSha256(Buffer.from(`TC3${secretKey}`, 'utf8'), date);
+  const secretService = hmacSha256(secretDate, service);
+  const secretSigning = hmacSha256(secretService, 'tc3_request');
+  const signature = hmacSha256(secretSigning, stringToSign).toString('hex');
+  return `${algorithm} Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+}
+
+function sha256Hex(text) {
+  return crypto.createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+function hmacSha256(key, text) {
+  return crypto.createHmac('sha256', key).update(text, 'utf8').digest();
 }
 
 async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
@@ -435,6 +622,9 @@ function resolveAiProvider(baseUrl) {
   const provider = HOMEWORK_AI_PROVIDER.replace(/[-_]/g, '').toLowerCase();
   if (provider === 'anthropic' || provider === 'codeplan' || provider === 'dashscopecodeplan') {
     return 'anthropic';
+  }
+  if (provider === 'tencentocr' || provider === 'tencenthandwritingocr') {
+    return 'tencent_ocr';
   }
   if (HOMEWORK_AI_PROVIDER) return HOMEWORK_AI_PROVIDER;
   if (/\/apps\/anthropic/i.test(baseUrl)) return 'anthropic';
