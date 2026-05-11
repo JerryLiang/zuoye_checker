@@ -6,7 +6,9 @@
 2. OpenAI-compatible Chat Completions
 3. 阿里百炼 Coding Plan / Anthropic-compatible Messages
 
-默认代码仍保留 DeepSeek 文本模型兜底，但 DeepSeek 官方 `https://api.deepseek.com` 当前不适合直接做图片识别：`image_url` 会报 `deserialize JSON body`，`text_base64` 会把图片 base64 当普通文本处理并产生 60 万+ `prompt_tokens`。
+默认代码现在直接接入阿里百炼 DashScope OpenAI-compatible 视觉接口：`qwen3-vl-flash` + `https://dashscope.aliyuncs.com/compatible-mode/v1`。如果只配置 `DASHSCOPE_API_KEY`，云函数会默认请求 `/chat/completions`，图片按 OpenAI `image_url` content part 发送。
+
+历史 DeepSeek 文本模型不适合直接做图片识别：`image_url` 会报 `deserialize JSON body`，`text_base64` 会把图片 base64 当普通文本处理并产生 60 万+ `prompt_tokens`。
 
 ## 方案 A：腾讯云 OCR GeneralHandwritingOCR（推荐先试）
 
@@ -83,7 +85,7 @@ qwen-vl-max
 
 不建议优先用 `qwen3.6-plus` 做作业图片 OCR；如果要识图，应优先用 VL 模型。
 
-## 方案 C：OpenAI-compatible 视觉接口
+## 方案 C：OpenAI-compatible 视觉接口（当前默认）
 
 适用于普通 DashScope / OpenAI-compatible 视觉接口：
 

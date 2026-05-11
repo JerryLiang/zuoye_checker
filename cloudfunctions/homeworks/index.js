@@ -13,9 +13,9 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
-const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://api.deepseek.com';
-const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'deepseek-v4-flash';
-const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.BAILIAN_CODING_PLAN_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'qwen3-vl-flash';
+const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.BAILIAN_CODING_PLAN_API_KEY || '';
 const HOMEWORK_AI_PROVIDER = String(process.env.HOMEWORK_AI_PROVIDER || '').toLowerCase();
 const TENCENT_SECRET_ID = process.env.TENCENT_SECRET_ID || '';
 const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY || '';
@@ -585,6 +585,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
       },
     ],
     temperature: 0.1,
+    max_tokens: Number(process.env.HOMEWORK_AI_MAX_TOKENS || 2048),
   };
 
   logAiDebug('request', {
@@ -600,6 +601,7 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
     messageCount: payload.messages.length,
     userContentType: Array.isArray(imageInput.content) ? 'array' : typeof imageInput.content,
     responseFormat: payload.response_format,
+    maxTokens: payload.max_tokens,
   }, debugLogs);
 
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY, debugLogs);
