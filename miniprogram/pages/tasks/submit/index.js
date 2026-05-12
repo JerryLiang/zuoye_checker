@@ -77,19 +77,11 @@ Page({
                 submit_text: hasText ? this.data.text.trim() : undefined,
                 file_asset_id: hasImage ? this.data.fileAssetId : undefined,
             });
-            const checkResult = res.data?.check_result || {};
-            const score = checkResult.score ?? 0;
-            const passed = !!checkResult.is_passed;
-            const feedback = checkResult.feedback || (passed ? '完成得不错，继续加油！' : '再补充一点内容就更好了。');
             wx.showModal({
-                title: passed ? '太棒了！' : '继续加油',
-                content: `评分：${score}分\n${feedback}${passed ? '\n任务已完成，积分 +2' : '\n请补充内容后再次提交'}`,
+                title: '提交成功',
+                content: '提交成功，等待爸爸妈妈检查',
                 showCancel: false,
-                success: () => {
-                    if (passed) {
-                        wx.navigateBack();
-                    }
-                },
+                success: () => wx.navigateBack(),
             });
         }
         catch (e) {

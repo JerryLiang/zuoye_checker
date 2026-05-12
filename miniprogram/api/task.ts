@@ -1,7 +1,7 @@
 export interface TaskItem {
   _id: string;
   title: string;
-  status: 1 | 2 | 3;
+  status: 1 | 2 | 3; // 1待完成 2已完成 3已提交待家长检查
 }
 
 async function callTasks(action: string, data: any = {}) {
@@ -22,5 +22,8 @@ export const taskApi = {
   },
   submit(taskId: string, payload: { child_id: string; submit_type: 1 | 2 | 3; submit_text?: string; file_asset_id?: string }) {
     return callTasks('submit', { id: taskId, data: payload });
+  },
+  review(taskId: string, payload: { child_id: string; approved?: boolean; feedback?: string }) {
+    return callTasks('review', { id: taskId, data: payload });
   },
 };

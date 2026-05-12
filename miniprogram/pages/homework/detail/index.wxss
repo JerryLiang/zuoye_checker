@@ -115,6 +115,10 @@
   opacity: 0.7;
 }
 
+.task-card.submitted {
+  border: 1rpx solid #FFE7BA;
+}
+
 .task-top {
   display: flex;
   justify-content: space-between;
@@ -149,6 +153,10 @@
   border: 3rpx solid #D9D9D9;
 }
 
+.task-check.submitted {
+  background: #FA8C16;
+}
+
 .task-title {
   font-size: 30rpx;
   color: #333;
@@ -170,6 +178,11 @@
 }
 
 .tag-pending {
+  background: #FFF7E6;
+  color: #FA8C16;
+}
+
+.tag-submitted {
   background: #FFF7E6;
   color: #FA8C16;
 }
@@ -266,4 +279,9 @@
 .empty-text {
   font-size: 28rpx;
   color: #999;
+}
+
+.btn-submit.approve {
+  color: #52C41A;
+  background: #F0FFF4;
 }

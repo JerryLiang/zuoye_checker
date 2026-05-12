@@ -150,6 +150,7 @@ async function getWeeklyReport(userId, data) {
       .where({ task_id: _.in(taskIds) })
       .get();
     (checkRes.data || []).forEach(check => {
+      if (!check.checked_at) return;
       const dateStr = taskDateMap[check.task_id];
       if (!dateStr || !dailyMap[dateStr]) return;
       const score = Number(check.score || 0);

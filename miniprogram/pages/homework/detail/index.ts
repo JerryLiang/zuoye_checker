@@ -1,4 +1,5 @@
 import { homeworkApi, HomeworkBatch, TaskInBatch } from '../../../api/homework';
+import { taskApi } from '../../../api/task';
 import { requireParentAuth } from '../../../utils/parentAuth';
 
 Page({
@@ -43,6 +44,26 @@ Page({
   goSubmit(e: WechatMiniprogram.BaseEvent) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
+  },
+
+  async onApproveTask(e: WechatMiniprogram.BaseEvent) {
+    if (!this.data.canManage) return;
+    const taskId = e.currentTarget.dataset.id;
+    if (!taskId || !this.data.batch?.child_id) return;
+
+    const res = await wx.showModal({
+      title: '确认检查通过',
+      content: '检查通过后任务会变为已完成，并发放奖励积分。',
+    });
+    if (!res.confirm) return;
+
+    try {
+      await taskApi.review(taskId, { child_id: this.data.batch.child_id, approved: true });
+      wx.showToast({ title: '已完成并发放积分', icon: 'success' });
+      await this.loadDetail(this.data.batchId);
+    } catch (e: any) {
+      wx.showToast({ title: e?.message || '检查失败', icon: 'none' });
+    }
   },
 
   async onDeleteBatch() {

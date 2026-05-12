@@ -19,4 +19,7 @@ exports.taskApi = {
     submit(taskId, payload) {
         return callTasks('submit', { id: taskId, data: payload });
     },
+    review(taskId, payload) {
+        return callTasks('review', { id: taskId, data: payload });
+    },
 };

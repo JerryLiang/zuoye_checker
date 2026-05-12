@@ -29,20 +29,21 @@
     <view
       wx:for="{{tasks}}"
       wx:key="_id"
-      class="task-card {{item.status === 2 ? 'done' : ''}}"
+      class="task-card {{item.status === 2 ? 'done' : (item.status === 3 ? 'submitted' : '')}}"
     >
       <view class="task-header">
         <view class="task-left">
-          <view class="task-check {{item.status === 2 ? 'checked' : ''}}">
+          <view class="task-check {{item.status === 2 ? 'checked' : (item.status === 3 ? 'submitted' : '')}}">
             <text wx:if="{{item.status === 2}}">✓</text>
+            <text wx:elif="{{item.status === 3}}">…</text>
           </view>
           <text class="task-title">{{item.title}}</text>
         </view>
-        <text class="tag {{item.status === 2 ? 'tag-done' : 'tag-pending'}}">
-          {{item.status === 2 ? '已完成' : '待完成'}}
+        <text class="tag {{item.status === 2 ? 'tag-done' : (item.status === 3 ? 'tag-submitted' : 'tag-pending')}}">
+          {{item.status === 2 ? '已完成' : (item.status === 3 ? '已提交' : '待完成')}}
         </text>
       </view>
-      <view class="task-actions" wx:if="{{item.status !== 2}}">
+      <view class="task-actions" wx:if="{{item.status === 1}}">
         <view class="btn-submit" data-id="{{item._id}}" bindtap="goSubmit">去完成</view>
       </view>
     </view>

@@ -88,6 +88,10 @@
   opacity: 0.6;
 }
 
+.task-item.submitted {
+  opacity: 0.9;
+}
+
 .task-left {
   display: flex;
   align-items: center;
@@ -106,6 +110,10 @@
 
 .task-dot.done {
   background: #52C41A;
+}
+
+.task-dot.submitted {
+  background: #FA8C16;
 }
 
 .task-title {
@@ -207,4 +215,9 @@
 
 .action-icon.purple {
   background: #F3EEFF;
+}
+
+.tag-submitted {
+  background: #FFF7E6;
+  color: #FA8C16;
 }

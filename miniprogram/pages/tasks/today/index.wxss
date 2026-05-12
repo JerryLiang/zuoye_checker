@@ -54,6 +54,10 @@
   opacity: 0.65;
 }
 
+.task-card.submitted {
+  border: 1rpx solid #FFE7BA;
+}
+
 .task-header {
   display: flex;
   justify-content: space-between;
@@ -84,6 +88,11 @@
 .task-check.checked {
   background: #52C41A;
   border-color: #52C41A;
+}
+
+.task-check.submitted {
+  background: #FA8C16;
+  border-color: #FA8C16;
 }
 
 .task-title {
@@ -136,4 +145,9 @@
 .empty-sub {
   font-size: 26rpx;
   color: #999;
+}
+
+.tag-submitted {
+  background: #FFF7E6;
+  color: #FA8C16;
 }
