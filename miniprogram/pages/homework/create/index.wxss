@@ -232,3 +232,25 @@
 .btn-primary.disabled {
   opacity: 0.6;
 }
+
+
+.btn-recognize {
+  margin-top: 16rpx;
+  text-align: center;
+  padding: 18rpx 0;
+  border-radius: 16rpx;
+  color: #fff;
+  background: #4F6EF7;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.btn-recognize.disabled {
+  opacity: 0.6;
+}
+
+.recognized-input {
+  margin-top: 10rpx;
+  width: 100%;
+  box-sizing: border-box;
+}

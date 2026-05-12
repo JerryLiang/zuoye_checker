@@ -36,7 +36,14 @@
         <view class="upload-text">拍照或从相册选择图片</view>
         <view class="upload-limit">还可上传 {{5 - imagePaths.length}} 张</view>
       </view>
-      <text class="form-hint">{{recognizing ? '正在上传并识别...' : '单张不超过10M，一天作业最多5张；上传后自动识别，确认后提交'}}</text>
+      <view
+        wx:if="{{fileAssetIds.length > 0}}"
+        class="btn-recognize {{uploading || recognizing ? 'disabled' : ''}}"
+        bindtap="recognizeUploadedImages"
+      >
+        {{recognizing ? '识别中...' : '上传识别'}}
+      </view>
+      <text class="form-hint">{{uploading ? '正在上传图片...' : (recognizing ? '正在识别作业内容...' : '单张不超过10M，一天作业最多5张；上传后点击“上传识别”再开始识别')}}</text>
     </view>
 
     <!-- 手动作业内容 -->
@@ -63,12 +70,20 @@
       <text class="form-label">作业内容</text>
       <view wx:if="{{recognizedItems.length > 0}}" class="recognized-list">
         <view class="recognized-item" wx:for="{{recognizedItems}}" wx:key="index">
-          <view class="recognized-subject">{{item.subject}}</view>
-          <view class="recognized-text">{{item.text}}</view>
+          <picker mode="selector" range="{{subjects}}" data-index="{{index}}" bindchange="onRecognizedSubjectChange">
+            <view class="recognized-subject">{{item.subject || '其他'}} ▾</view>
+          </picker>
+          <input
+            class="input-field recognized-input"
+            placeholder="可手动修改识别内容"
+            data-index="{{index}}"
+            bindinput="onRecognizedTextInput"
+            value="{{item.text}}"
+          />
         </view>
       </view>
       <view wx:else class="empty-recognized">
-        {{recognizing ? '正在识别作业内容...' : '上传图片后，这里会自动列出科目和作业内容'}}
+        {{recognizing ? '正在识别作业内容...' : (fileAssetIds.length > 0 ? '点击“上传识别”后，这里会列出可编辑的科目和作业内容' : '上传图片后，点击“上传识别”开始识别')}}
       </view>
     </view>
 
@@ -92,7 +107,7 @@
     </view>
 
     <!-- 提交按钮 -->
-    <view class="btn-primary {{submitting || recognizing ? 'disabled' : ''}}" bindtap="onSubmit">
+    <view class="btn-primary {{submitting || uploading || recognizing ? 'disabled' : ''}}" bindtap="onSubmit">
       <text>{{submitting ? '提交中...' : '提交并生成任务'}}</text>
     </view>
   </view>

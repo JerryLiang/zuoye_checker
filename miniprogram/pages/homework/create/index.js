@@ -18,6 +18,7 @@ Page({
         answerText: '',
         imagePaths: [],
         fileAssetIds: [],
+        uploading: false,
         recognizing: false,
         canvasWidth: 300,
         canvasHeight: 300,
@@ -106,14 +107,9 @@ Page({
                 wx.showToast({ title: '单张图片不能超过10M', icon: 'none' });
                 return;
             }
-            this.setData({ recognizing: true });
+            this.setData({ uploading: true });
             const imagePaths = this.data.imagePaths.slice();
             const fileAssetIds = this.data.fileAssetIds.slice();
-            const allRecognizedItems = this.data.recognizedItems.slice();
-            let batchDate = this.data.batchDate;
-            let subject = this.data.subject;
-            let subjectIndex = this.data.subjectIndex;
-            let providerMessage = '';
             for (let i = 0; i < tempFiles.length; i++) {
                 const filePath = tempFiles[i]?.tempFilePath;
                 if (!filePath)
@@ -124,7 +120,33 @@ Page({
                 const asset = await upload_1.uploadApi.upload(uploadPath, 'homework_input', app.globalData.currentChildId);
                 fileAssetIds.push(asset._id);
                 this.setData({ fileAssetIds });
-                const recognized = await homework_1.homeworkApi.recognizeImage(asset._id);
+            }
+            wx.showToast({ title: '图片已上传，请点击识别', icon: 'success' });
+        }
+        catch (e) {
+            console.error('图片上传失败', e);
+            wx.showToast({ title: e instanceof Error ? e.message : '图片上传失败', icon: 'none' });
+        }
+        finally {
+            this.setData({ uploading: false });
+        }
+    },
+    async recognizeUploadedImages() {
+        if (this.data.recognizing || this.data.uploading)
+            return;
+        if (this.data.fileAssetIds.length === 0) {
+            wx.showToast({ title: '请先上传图片', icon: 'none' });
+            return;
+        }
+        try {
+            this.setData({ recognizing: true });
+            const allRecognizedItems = [];
+            let batchDate = this.data.batchDate;
+            let subject = this.data.subject;
+            let subjectIndex = this.data.subjectIndex;
+            let providerMessage = '';
+            for (let i = 0; i < this.data.fileAssetIds.length; i++) {
+                const recognized = await homework_1.homeworkApi.recognizeImage(this.data.fileAssetIds[i]);
                 if (recognized?.data) {
                     const nextSubjectIndex = this.data.subjects.indexOf(recognized.data.subject || subject);
                     if (nextSubjectIndex >= 0 && allRecognizedItems.length === 0) {
@@ -149,7 +171,10 @@ Page({
                 wx.showToast({ title: providerMessage, icon: 'none' });
             }
             else if (allRecognizedItems.length > 0) {
-                wx.showToast({ title: '识别完成，请确认后提交', icon: 'success' });
+                wx.showToast({ title: '识别完成，可手动修改后提交', icon: 'success' });
+            }
+            else {
+                wx.showToast({ title: '未识别到内容，请重试或换图', icon: 'none' });
             }
         }
         catch (e) {
@@ -159,6 +184,26 @@ Page({
         finally {
             this.setData({ recognizing: false });
         }
+    },
+    onRecognizedTextInput(e) {
+        const index = Number(e.currentTarget.dataset.index);
+        const recognizedItems = this.data.recognizedItems.slice();
+        if (!recognizedItems[index])
+            return;
+        recognizedItems[index] = { ...recognizedItems[index], text: e.detail.value };
+        this.setData({
+            recognizedItems,
+            rawText: recognizedItems.map(item => item.text.trim()).filter(Boolean).join('\n'),
+        });
+    },
+    onRecognizedSubjectChange(e) {
+        const index = Number(e.currentTarget.dataset.index);
+        const subjectIndex = Number(e.detail.value);
+        const recognizedItems = this.data.recognizedItems.slice();
+        if (!recognizedItems[index])
+            return;
+        recognizedItems[index] = { ...recognizedItems[index], subject: this.data.subjects[subjectIndex] };
+        this.setData({ recognizedItems });
     },
     removeHomeworkImage(e) {
         const index = Number(e.currentTarget.dataset.index);
@@ -242,7 +287,7 @@ Page({
             .filter(item => item.text);
     },
     async onSubmit() {
-        if (this.data.submitting || this.data.recognizing) {
+        if (this.data.submitting || this.data.uploading || this.data.recognizing) {
             return;
         }
         const app = getApp();
@@ -253,7 +298,7 @@ Page({
         }
         const submitItems = this.getSubmitItems();
         if (submitItems.length === 0) {
-            wx.showToast({ title: this.data.inputMode === 'photo' ? '请先上传图片识别作业' : '请输入作业内容', icon: 'none' });
+            wx.showToast({ title: this.data.inputMode === 'photo' ? '请先上传图片并点击识别' : '请输入作业内容', icon: 'none' });
             return;
         }
         if (this.data.autoCheckMath && !this.data.answerText.trim()) {
