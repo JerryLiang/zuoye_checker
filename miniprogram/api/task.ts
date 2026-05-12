@@ -42,4 +42,7 @@ export const taskApi = {
   review(taskId: string, payload: { child_id: string; approved?: boolean; feedback?: string }) {
     return callTasks('review', { id: taskId, data: payload });
   },
+  remove(taskId: string, child_id: string) {
+    return callTasks('delete', { id: taskId, data: { child_id } });
+  },
 };

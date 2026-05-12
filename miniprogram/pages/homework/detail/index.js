@@ -91,6 +91,27 @@ Page({
             wx.showToast({ title: e?.message || '检查失败', icon: 'none' });
         }
     },
+    async onDeleteTask(e) {
+        if (!this.data.canManage)
+            return;
+        const taskId = e.currentTarget.dataset.id;
+        if (!taskId || !this.data.batch?.child_id)
+            return;
+        const res = await wx.showModal({
+            title: '确认删除任务',
+            content: '只能删除学生未提交的任务，删除后不可恢复。',
+        });
+        if (!res.confirm)
+            return;
+        try {
+            await task_1.taskApi.remove(taskId, this.data.batch.child_id);
+            wx.showToast({ title: '已删除', icon: 'success' });
+            await this.loadDetail(this.data.batchId);
+        }
+        catch (e) {
+            wx.showToast({ title: e?.message || '删除失败', icon: 'none' });
+        }
+    },
     async onDeleteBatch() {
         const redirect = this.data.batchId ? `/pages/homework/detail/index?id=${this.data.batchId}&role=parent` : '/pages/parent/home/index';
         if (!(0, parentAuth_1.requireParentAuth)(redirect))

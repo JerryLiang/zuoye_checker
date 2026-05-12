@@ -109,6 +109,7 @@
   border-top: 1rpx solid #F5F5F5;
   display: flex;
   justify-content: flex-end;
+  gap: 12rpx;
 }
 
 .btn-submit {
@@ -117,6 +118,11 @@
   background: #EEF1FE;
   padding: 10rpx 28rpx;
   border-radius: 24rpx;
+}
+
+.btn-submit.danger {
+  color: #FF4D4F;
+  background: #FFF1F0;
 }
 
 .refresh-btn {

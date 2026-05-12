@@ -25,7 +25,7 @@
     <view class="card overview-card" wx:if="{{currentChild}}">
       <view class="section-title">今日概览</view>
       <view class="overview-row">
-        <view class="overview-item">
+        <view class="overview-item tappable" bindtap="goTodayTasks">
           <view class="overview-number">{{todayTotal}}</view>
           <view class="overview-label">任务总数</view>
         </view>

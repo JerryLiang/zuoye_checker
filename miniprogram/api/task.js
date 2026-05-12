@@ -25,4 +25,7 @@ exports.taskApi = {
     review(taskId, payload) {
         return callTasks('review', { id: taskId, data: payload });
     },
+    remove(taskId, child_id) {
+        return callTasks('delete', { id: taskId, data: { child_id } });
+    },
 };

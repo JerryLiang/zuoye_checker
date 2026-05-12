@@ -73,13 +73,14 @@
           <picker mode="selector" range="{{subjects}}" data-index="{{index}}" bindchange="onRecognizedSubjectChange">
             <view class="recognized-subject">{{item.subject || '其他'}} ▾</view>
           </picker>
-          <input
-            class="input-field recognized-input"
+          <textarea
+            class="textarea-field recognized-input"
             placeholder="可手动修改识别内容"
             data-index="{{index}}"
             bindinput="onRecognizedTextInput"
+            maxlength="-1"
             value="{{item.text}}"
-          />
+          ></textarea>
         </view>
       </view>
       <view wx:else class="empty-recognized">

@@ -26,6 +26,8 @@ exports.main = async (event, context) => {
         return await submitTask(user._id, id, data);
       case 'review':
         return await reviewTask(user._id, id, data);
+      case 'delete':
+        return await deleteTask(user._id, id, data);
       default:
         return { code: 400, message: '未知操作', data: null };
     }
@@ -33,6 +35,31 @@ exports.main = async (event, context) => {
     return { code: 500, message: err.message, data: null };
   }
 };
+
+async function deleteTask(userId, taskId, data = {}) {
+  const { child_id } = data;
+  if (!child_id) {
+    return { code: 400, message: '缺少child_id', data: null };
+  }
+
+  const taskCheck = await getOwnedTask(userId, taskId, child_id);
+  if (taskCheck.error) return taskCheck.error;
+  const task = taskCheck.task;
+
+  if (task.status !== 1) {
+    return { code: 409, message: '只能删除学生未提交的任务', data: null };
+  }
+
+  const removeRes = await db.collection('task_items')
+    .where({ _id: taskId, child_id, status: 1 })
+    .remove();
+
+  if (removeRes.stats.removed === 0) {
+    return { code: 409, message: '任务状态已变化，请刷新后重试', data: null };
+  }
+
+  return { code: 0, message: 'deleted', data: { task_id: taskId } };
+}
 
 async function getTask(userId, taskId, data = {}) {
   const { child_id } = data;

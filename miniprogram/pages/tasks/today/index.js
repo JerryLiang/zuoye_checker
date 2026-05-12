@@ -8,6 +8,7 @@ Page({
         doneTasks: 0,
         loading: false,
         currentDate: '',
+        canManage: false,
     },
     onLoad() {
         const now = new Date();
@@ -20,6 +21,8 @@ Page({
         });
     },
     async onShow() {
+        const canManage = wx.getStorageSync('activeRole') === 'parent';
+        this.setData({ canManage });
         await this.loadTasks();
     },
     async loadTasks() {
@@ -47,8 +50,32 @@ Page({
     goSubmit(e) {
         const id = e.currentTarget.dataset.id;
         const status = Number(e.currentTarget.dataset.status || 1);
-        const mode = status === 2 ? 'view' : 'edit';
-        wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}&mode=${mode}&role=child` });
+        const role = this.data.canManage ? 'parent' : 'child';
+        const mode = this.data.canManage || status === 2 ? 'view' : 'edit';
+        wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}&mode=${mode}&role=${role}` });
+    },
+    async onDeleteTask(e) {
+        if (!this.data.canManage)
+            return;
+        const taskId = e.currentTarget.dataset.id;
+        const app = getApp();
+        const childId = app.globalData.currentChildId;
+        if (!taskId || !childId)
+            return;
+        const res = await wx.showModal({
+            title: '确认删除任务',
+            content: '只能删除学生未提交的任务，删除后不可恢复。',
+        });
+        if (!res.confirm)
+            return;
+        try {
+            await task_1.taskApi.remove(taskId, childId);
+            wx.showToast({ title: '已删除', icon: 'success' });
+            await this.loadTasks();
+        }
+        catch (e) {
+            wx.showToast({ title: e?.message || '删除失败', icon: 'none' });
+        }
     },
     async onRefresh() {
         await this.loadTasks();

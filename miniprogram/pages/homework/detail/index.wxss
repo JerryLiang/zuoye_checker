@@ -276,6 +276,11 @@
   border-radius: 24rpx;
 }
 
+.btn-submit.danger {
+  color: #FF4D4F;
+  background: #FFF1F0;
+}
+
 /* 底部操作 */
 .bottom-actions {
   display: flex;

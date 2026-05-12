@@ -105,6 +105,9 @@
 .homework-input {
   flex: 1;
   min-width: 0;
+  height: 88rpx;
+  line-height: 44rpx;
+  margin-bottom: 0;
 }
 
 .upload-box {
@@ -252,5 +255,8 @@
 .recognized-input {
   margin-top: 10rpx;
   width: 100%;
+  min-height: 170rpx;
   box-sizing: border-box;
+  line-height: 1.5;
+  margin-bottom: 0;
 }

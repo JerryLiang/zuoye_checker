@@ -74,6 +74,10 @@ Page({
     goHomeworkHistory() {
         wx.navigateTo({ url: '/pages/homework/history/index?role=parent' });
     },
+    goTodayTasks() {
+        wx.setStorageSync('activeRole', 'parent');
+        wx.switchTab({ url: '/pages/tasks/today/index' });
+    },
     goChildList() {
         wx.navigateTo({ url: '/pages/child/list/index' });
     },

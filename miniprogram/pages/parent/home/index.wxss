@@ -62,6 +62,10 @@
   text-align: center;
 }
 
+.overview-item.tappable {
+  border: 1rpx solid rgba(79, 110, 247, 0.18);
+}
+
 .overview-number {
   font-size: 46rpx;
   font-weight: 800;

@@ -76,8 +76,9 @@
           </view>
 
           <!-- 操作 -->
-          <view class="task-actions" wx:if="{{item.status === 3 && canManage}}" catchtap="noop">
-            <view class="btn-submit approve" data-id="{{item._id}}" bindtap="onApproveTask">检查通过</view>
+          <view class="task-actions" wx:if="{{canManage && (item.status === 1 || item.status === 3)}}" catchtap="noop">
+            <view wx:if="{{item.status === 1}}" class="btn-submit danger" data-id="{{item._id}}" bindtap="onDeleteTask">删除任务</view>
+            <view wx:if="{{item.status === 3}}" class="btn-submit approve" data-id="{{item._id}}" bindtap="onApproveTask">检查通过</view>
           </view>
         </view>
       </view>
