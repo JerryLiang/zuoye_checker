@@ -10,6 +10,9 @@ export interface HomeworkBatch {
   created_at: string;
   updated_at: string;
   tasks: TaskInBatch[];
+  total_tasks?: number;
+  completed_tasks?: number;
+  progress_pct?: number;
 }
 
 export interface TaskInBatch {
@@ -75,6 +78,7 @@ export const homeworkApi = {
     task_items?: HomeworkRecognitionItem[];
     batch_date: string;
     file_asset_id?: string;
+    file_asset_ids?: string[];
     check_answers?: string;
   }) {
     return callHomeworks('create', { data: payload });

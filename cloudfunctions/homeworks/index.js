@@ -113,7 +113,19 @@ async function listHomeworks(userId, data = {}) {
     .orderBy('_id', 'desc')
     .get();
 
-  return { code: 0, message: 'ok', data: res.data };
+  const batches = res.data || [];
+  for (let i = 0; i < batches.length; i++) {
+    const tasksRes = await db.collection('task_items')
+      .where({ batch_id: batches[i]._id })
+      .get();
+    const tasks = tasksRes.data || [];
+    const completed = tasks.filter(task => task.status === 2).length;
+    batches[i].total_tasks = tasks.length;
+    batches[i].completed_tasks = completed;
+    batches[i].progress_pct = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
+  }
+
+  return { code: 0, message: 'ok', data: batches };
 }
 
 async function getHomework(userId, id) {
@@ -180,6 +192,10 @@ async function createHomework(userId, data) {
     return { code: 404, message: '学生不存在', data: null };
   }
 
+  if (Array.isArray(data.file_asset_ids) && data.file_asset_ids.length > 5) {
+    return { code: 400, message: '一天作业最多上传5张', data: null };
+  }
+
   // 创建作业批次
   const batchData = {
     user_id: userId,
@@ -188,6 +204,7 @@ async function createHomework(userId, data) {
     input_source: data.input_source,
     raw_text: data.raw_text || null,
     file_asset_id: data.file_asset_id || null,
+    file_asset_ids: Array.isArray(data.file_asset_ids) ? data.file_asset_ids.slice(0, 5) : [],
     batch_date: data.batch_date,
     status: 1,
     created_at: now,

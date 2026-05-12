@@ -1,11 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadApi = void 0;
+exports.uploadApi = exports.MAX_UPLOAD_IMAGE_BYTES = void 0;
 const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+exports.MAX_UPLOAD_IMAGE_BYTES = 10 * 1024 * 1024;
 exports.uploadApi = {
     async upload(filePath, bizType, childId) {
         if (!childId) {
             throw new Error('缺少学生信息');
+        }
+        const fileInfo = await wx.getFileInfo({ filePath });
+        if ((fileInfo.size || 0) > exports.MAX_UPLOAD_IMAGE_BYTES) {
+            throw new Error('单张图片不能超过10M');
         }
         const timestamp = Date.now();
         const rawExt = (filePath.split('.').pop() || 'jpg').toLowerCase();
@@ -25,6 +30,7 @@ exports.uploadApi = {
                     child_id: childId,
                     file_name: filePath.split('/').pop() || null,
                     file_ext: ext,
+                    file_size: fileInfo.size || 0,
                 },
             },
         });

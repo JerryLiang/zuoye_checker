@@ -129,6 +129,9 @@ Page({
     goReward() {
         wx.switchTab({ url: '/pages/reward/index/index' });
     },
+    goHomeworkHistory() {
+        wx.navigateTo({ url: '/pages/homework/history/index?role=child' });
+    },
     goTaskSubmit(e) {
         const id = e.currentTarget.dataset.id;
         wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });

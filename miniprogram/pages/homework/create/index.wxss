@@ -108,7 +108,7 @@
 }
 
 .upload-box {
-  height: 260rpx;
+  height: 220rpx;
   border: 2rpx dashed #D8DCE8;
   border-radius: 18rpx;
   background: #FAFBFE;
@@ -127,6 +127,41 @@
 .upload-text {
   font-size: 26rpx;
   color: #666;
+}
+
+.upload-limit {
+  margin-top: 8rpx;
+  color: #999;
+  font-size: 22rpx;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.image-cell {
+  position: relative;
+  height: 160rpx;
+  border-radius: 14rpx;
+  overflow: hidden;
+  background: #F0F2F7;
+}
+
+.remove-image {
+  position: absolute;
+  right: 8rpx;
+  top: 8rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 34rpx;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 30rpx;
 }
 
 .preview-image {

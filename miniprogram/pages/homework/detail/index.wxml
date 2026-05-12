@@ -71,7 +71,7 @@
     <!-- 底部操作 -->
     <view class="bottom-actions">
       <view class="btn-refresh" bindtap="onRefresh">刷新</view>
-      <view class="btn-delete" bindtap="onDeleteBatch">删除作业</view>
+      <view wx:if="{{canManage}}" class="btn-delete" bindtap="onDeleteBatch">删除作业</view>
     </view>
   </block>
 </view>

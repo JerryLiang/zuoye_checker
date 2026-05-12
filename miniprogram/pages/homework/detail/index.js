@@ -11,13 +11,15 @@ Page({
         doneCount: 0,
         totalCount: 0,
         progressPct: 0,
+        canManage: false,
     },
     onLoad(options) {
-        const redirect = options.id ? `/pages/homework/detail/index?id=${options.id}` : '/pages/parent/home/index';
-        if (!(0, parentAuth_1.requireParentAuth)(redirect))
+        const canManage = options.role === 'parent';
+        const redirect = options.id ? `/pages/homework/detail/index?id=${options.id}&role=parent` : '/pages/parent/home/index';
+        if (canManage && !(0, parentAuth_1.requireParentAuth)(redirect))
             return;
         if (options.id) {
-            this.setData({ batchId: options.id });
+            this.setData({ batchId: options.id, canManage });
             this.loadDetail(options.id);
         }
     },
@@ -44,6 +46,9 @@ Page({
         wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
     },
     async onDeleteBatch() {
+        const redirect = this.data.batchId ? `/pages/homework/detail/index?id=${this.data.batchId}&role=parent` : '/pages/parent/home/index';
+        if (!(0, parentAuth_1.requireParentAuth)(redirect))
+            return;
         const res = await wx.showModal({
             title: '确认删除',
             content: '删除后不可恢复，确认删除这批作业吗？',

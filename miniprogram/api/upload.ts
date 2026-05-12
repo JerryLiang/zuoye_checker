@@ -4,11 +4,17 @@ export interface FileAsset {
 }
 
 const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+export const MAX_UPLOAD_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export const uploadApi = {
   async upload(filePath: string, bizType: 'homework_input' | 'task_submission', childId: string) {
     if (!childId) {
       throw new Error('缺少学生信息');
+    }
+
+    const fileInfo = await (wx as any).getFileInfo({ filePath });
+    if ((fileInfo.size || 0) > MAX_UPLOAD_IMAGE_BYTES) {
+      throw new Error('单张图片不能超过10M');
     }
 
     const timestamp = Date.now();
@@ -32,6 +38,7 @@ export const uploadApi = {
           child_id: childId,
           file_name: filePath.split('/').pop() || null,
           file_ext: ext,
+          file_size: fileInfo.size || 0,
         },
       },
     });

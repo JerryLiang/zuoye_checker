@@ -8,6 +8,7 @@
     "pages/parent/auth/index",
     "pages/parent/home/index",
     "pages/homework/create/index",
+    "pages/homework/history/index",
     "pages/tasks/submit/index",
     "pages/child/list/index",
     "pages/child/edit/index",

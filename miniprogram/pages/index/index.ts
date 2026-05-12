@@ -142,6 +142,10 @@ Page({
     wx.switchTab({ url: '/pages/reward/index/index' });
   },
 
+  goHomeworkHistory() {
+    wx.navigateTo({ url: '/pages/homework/history/index?role=child' });
+  },
+
   goTaskSubmit(e: WechatMiniprogram.BaseEvent) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });

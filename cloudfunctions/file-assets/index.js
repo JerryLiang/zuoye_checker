@@ -77,7 +77,7 @@ async function getOrCreateUser(openid) {
 }
 
 async function createFileAsset(userId, data) {
-  const { fileID, biz_type, child_id, file_name, file_ext } = data;
+  const { fileID, biz_type, child_id, file_name, file_ext, file_size } = data;
 
   if (!fileID || !biz_type || !child_id) {
     return { code: 400, message: '缺少必要参数', data: null };
@@ -85,6 +85,11 @@ async function createFileAsset(userId, data) {
 
   if (!ALLOWED_BIZ_TYPES.includes(biz_type)) {
     return { code: 400, message: '文件业务类型不支持', data: null };
+  }
+
+  const numericSize = Number(file_size || 0);
+  if (numericSize > 10 * 1024 * 1024) {
+    return { code: 400, message: '单张图片不能超过10M', data: null };
   }
 
   const normalizedExt = String(file_ext || '').toLowerCase();
@@ -114,6 +119,7 @@ async function createFileAsset(userId, data) {
     child_id: child_id || null,
     file_name: file_name || null,
     file_ext: normalizedExt || null,
+    file_size: numericSize || null,
     created_at: now,
     updated_at: now,
   };

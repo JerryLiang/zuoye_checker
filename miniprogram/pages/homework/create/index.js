@@ -16,8 +16,8 @@ Page({
         inputMode: 'text',
         autoCheckMath: false,
         answerText: '',
-        imagePath: '',
-        fileAssetId: '',
+        imagePaths: [],
+        fileAssetIds: [],
         recognizing: false,
         canvasWidth: 300,
         canvasHeight: 300,
@@ -86,39 +86,70 @@ Page({
             wx.navigateTo({ url: '/pages/child/edit/index?mode=onboarding' });
             return;
         }
+        const remaining = 5 - this.data.imagePaths.length;
+        if (remaining <= 0) {
+            wx.showToast({ title: '一天作业最多上传5张', icon: 'none' });
+            return;
+        }
         try {
             const imageRes = await wx.chooseMedia({
-                count: 1,
+                count: remaining,
                 mediaType: ['image'],
                 sourceType: ['album', 'camera'],
                 sizeType: ['compressed'],
             });
-            const filePath = imageRes.tempFiles[0]?.tempFilePath;
-            if (!filePath)
+            const tempFiles = imageRes.tempFiles || [];
+            if (tempFiles.length === 0)
                 return;
-            const uploadPath = await this.compressImageForRecognition(filePath);
-            this.setData({ imagePath: uploadPath, recognizing: true, recognizedItems: [], rawText: '' });
-            const asset = await upload_1.uploadApi.upload(uploadPath, 'homework_input', app.globalData.currentChildId);
-            this.setData({ fileAssetId: asset._id });
-            const recognized = await homework_1.homeworkApi.recognizeImage(asset._id);
-            if (recognized?.data) {
-                const subjectIndex = this.data.subjects.indexOf(recognized.data.subject || this.data.subject);
-                const subject = subjectIndex >= 0 ? this.data.subjects[subjectIndex] : this.data.subject;
-                const recognizedItems = this.buildRecognizedItems(recognized.data.recognized_items, recognized.data.raw_text, subject);
-                const rawText = recognizedItems.map(item => item.text).join('\n');
-                this.setData({
-                    rawText,
-                    recognizedItems,
-                    batchDate: recognized.data.batch_date || this.data.batchDate,
-                    subject,
-                    subjectIndex: subjectIndex >= 0 ? subjectIndex : this.data.subjectIndex,
-                });
-                if (recognized.data.provider_message) {
-                    wx.showToast({ title: recognized.data.provider_message, icon: 'none' });
+            const oversized = tempFiles.find(file => (file.size || 0) > 10 * 1024 * 1024);
+            if (oversized) {
+                wx.showToast({ title: '单张图片不能超过10M', icon: 'none' });
+                return;
+            }
+            this.setData({ recognizing: true });
+            const imagePaths = this.data.imagePaths.slice();
+            const fileAssetIds = this.data.fileAssetIds.slice();
+            const allRecognizedItems = this.data.recognizedItems.slice();
+            let batchDate = this.data.batchDate;
+            let subject = this.data.subject;
+            let subjectIndex = this.data.subjectIndex;
+            let providerMessage = '';
+            for (let i = 0; i < tempFiles.length; i++) {
+                const filePath = tempFiles[i]?.tempFilePath;
+                if (!filePath)
+                    continue;
+                const uploadPath = await this.compressImageForRecognition(filePath);
+                imagePaths.push(uploadPath);
+                this.setData({ imagePaths });
+                const asset = await upload_1.uploadApi.upload(uploadPath, 'homework_input', app.globalData.currentChildId);
+                fileAssetIds.push(asset._id);
+                this.setData({ fileAssetIds });
+                const recognized = await homework_1.homeworkApi.recognizeImage(asset._id);
+                if (recognized?.data) {
+                    const nextSubjectIndex = this.data.subjects.indexOf(recognized.data.subject || subject);
+                    if (nextSubjectIndex >= 0 && allRecognizedItems.length === 0) {
+                        subject = this.data.subjects[nextSubjectIndex];
+                        subjectIndex = nextSubjectIndex;
+                    }
+                    const recognizedItems = this.buildRecognizedItems(recognized.data.recognized_items, recognized.data.raw_text, subject);
+                    allRecognizedItems.push(...recognizedItems);
+                    batchDate = recognized.data.batch_date || batchDate;
+                    providerMessage = recognized.data.provider_message || providerMessage;
                 }
-                else if (recognizedItems.length > 0) {
-                    wx.showToast({ title: '识别完成，请确认后提交', icon: 'success' });
-                }
+            }
+            const rawText = allRecognizedItems.map(item => item.text).join('\n');
+            this.setData({
+                rawText,
+                recognizedItems: allRecognizedItems,
+                batchDate,
+                subject,
+                subjectIndex,
+            });
+            if (providerMessage) {
+                wx.showToast({ title: providerMessage, icon: 'none' });
+            }
+            else if (allRecognizedItems.length > 0) {
+                wx.showToast({ title: '识别完成，请确认后提交', icon: 'success' });
             }
         }
         catch (e) {
@@ -128,6 +159,12 @@ Page({
         finally {
             this.setData({ recognizing: false });
         }
+    },
+    removeHomeworkImage(e) {
+        const index = Number(e.currentTarget.dataset.index);
+        const imagePaths = this.data.imagePaths.filter((_item, idx) => idx !== index);
+        const fileAssetIds = this.data.fileAssetIds.filter((_item, idx) => idx !== index);
+        this.setData({ imagePaths, fileAssetIds });
     },
     async compressImageForRecognition(filePath) {
         const maxBytes = 700 * 1024;
@@ -234,7 +271,8 @@ Page({
                 raw_text: submitItems.map(item => item.text).join('\n'),
                 task_items: submitItems,
                 batch_date: this.data.batchDate,
-                file_asset_id: this.data.fileAssetId || undefined,
+                file_asset_id: this.data.fileAssetIds[0] || undefined,
+                file_asset_ids: this.data.fileAssetIds.length > 0 ? this.data.fileAssetIds : undefined,
                 check_answers: this.data.autoCheckMath ? this.data.answerText : undefined,
             });
             wx.showToast({ title: '作业已创建', icon: 'success' });

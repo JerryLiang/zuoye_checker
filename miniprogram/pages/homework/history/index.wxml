@@ -1,0 +1,35 @@
+<view class="page">
+  <view class="history-header">
+    <view>
+      <view class="history-title">历史作业</view>
+      <view class="history-sub">查看每天作业完成进度和批改反馈</view>
+    </view>
+    <view class="refresh-small" bindtap="onRefresh">刷新</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-wrap">加载中...</view>
+
+  <view wx:elif="{{batches.length === 0}}" class="empty-state">
+    <view class="empty-icon">📚</view>
+    <view class="empty-text">还没有历史作业</view>
+    <view class="empty-sub">家长创建作业后，这里会显示完成情况</view>
+  </view>
+
+  <block wx:else>
+    <view wx:for="{{batches}}" wx:key="_id" class="history-card" data-id="{{item._id}}" bindtap="goDetail">
+      <view class="card-top">
+        <view class="subject-tag">{{item.displaySubject}}</view>
+        <view class="date-text">{{item.batch_date}}</view>
+      </view>
+      <view class="raw-text" wx:if="{{item.raw_text}}">{{item.raw_text}}</view>
+      <view class="progress-row">
+        <text>{{item.progressText}}</text>
+        <text>{{item.progressPctValue}}%</text>
+      </view>
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{item.progressPctValue}}%"></view>
+      </view>
+      <view class="detail-link">查看详情 ›</view>
+    </view>
+  </block>
+</view>

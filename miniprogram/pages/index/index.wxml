@@ -7,7 +7,7 @@
   <block wx:else>
     <!-- 欢迎横幅 -->
     <view class="hero-banner">
-      <view class="hero-title">{{greeting}}，家长</view>
+      <view class="hero-title">{{greeting}}，{{currentChild ? currentChild.name : '同学'}}</view>
       <view class="hero-sub" wx:if="{{currentChild}}">{{currentChild.name}} 的学习之旅</view>
       <view class="hero-sub" wx:else>请先添加学生信息</view>
     </view>
@@ -88,6 +88,10 @@
         <view class="action-item" bindtap="goReward">
           <view class="action-icon purple">🎁</view>
           <text>我的奖励</text>
+        </view>
+        <view class="action-item" bindtap="goHomeworkHistory">
+          <view class="action-icon green">📚</view>
+          <text>历史作业</text>
         </view>
       </view>
     </view>

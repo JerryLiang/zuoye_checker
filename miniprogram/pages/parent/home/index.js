@@ -71,6 +71,9 @@ Page({
     goWeeklyReport() {
         wx.navigateTo({ url: '/pages/report/weekly/index' });
     },
+    goHomeworkHistory() {
+        wx.navigateTo({ url: '/pages/homework/history/index?role=parent' });
+    },
     goChildList() {
         wx.navigateTo({ url: '/pages/child/list/index' });
     },

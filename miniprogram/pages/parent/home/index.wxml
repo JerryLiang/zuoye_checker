@@ -47,6 +47,10 @@
           <view class="action-icon purple">📊</view>
           <text>学习周报</text>
         </view>
+        <view class="action-item" bindtap="goHomeworkHistory">
+          <view class="action-icon blue">📚</view>
+          <text>历史作业</text>
+        </view>
         <view class="action-item" bindtap="goChildList">
           <view class="action-icon green">👶</view>
           <text>学生管理</text>

@@ -1,0 +1,125 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #F5F6FA;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border-radius: 24rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #4F6EF7, #7B93FA);
+}
+
+.history-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.history-sub {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.refresh-small {
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.loading-wrap,
+.empty-state {
+  padding: 120rpx 24rpx;
+  text-align: center;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 64rpx;
+  margin-bottom: 16rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.history-card {
+  padding: 26rpx;
+  margin-bottom: 18rpx;
+  border-radius: 20rpx;
+  background: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.card-top,
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subject-tag {
+  padding: 8rpx 18rpx;
+  border-radius: 12rpx;
+  color: #4F6EF7;
+  background: #EEF1FE;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.date-text {
+  color: #999;
+  font-size: 24rpx;
+}
+
+.raw-text {
+  margin-top: 18rpx;
+  color: #333;
+  font-size: 28rpx;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.progress-row {
+  margin-top: 20rpx;
+  color: #666;
+  font-size: 24rpx;
+}
+
+.progress-bar {
+  height: 12rpx;
+  margin-top: 10rpx;
+  border-radius: 999rpx;
+  overflow: hidden;
+  background: #E8EAF0;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: linear-gradient(90deg, #52C41A, #4FDD8A);
+}
+
+.detail-link {
+  margin-top: 18rpx;
+  color: #4F6EF7;
+  font-size: 26rpx;
+  text-align: right;
+}

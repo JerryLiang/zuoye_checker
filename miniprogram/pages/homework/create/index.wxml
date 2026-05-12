@@ -25,14 +25,18 @@
     <!-- 图片上传 -->
     <view class="form-group" wx:if="{{inputMode === 'photo'}}">
       <text class="form-label">作业图片</text>
-      <view class="upload-box" bindtap="chooseHomeworkImage">
-        <image wx:if="{{imagePath}}" class="preview-image" src="{{imagePath}}" mode="aspectFill"></image>
-        <block wx:else>
-          <view class="upload-icon">🖼️</view>
-          <view class="upload-text">拍照或从相册选择图片</view>
-        </block>
+      <view class="image-grid" wx:if="{{imagePaths.length > 0}}">
+        <view class="image-cell" wx:for="{{imagePaths}}" wx:key="index">
+          <image class="preview-image" src="{{item}}" mode="aspectFill"></image>
+          <view class="remove-image" data-index="{{index}}" catchtap="removeHomeworkImage">×</view>
+        </view>
       </view>
-      <text class="form-hint">{{recognizing ? '正在上传并识别...' : '上传后自动识别科目和作业内容，确认后提交'}}</text>
+      <view class="upload-box" bindtap="chooseHomeworkImage" wx:if="{{imagePaths.length < 5}}">
+        <view class="upload-icon">🖼️</view>
+        <view class="upload-text">拍照或从相册选择图片</view>
+        <view class="upload-limit">还可上传 {{5 - imagePaths.length}} 张</view>
+      </view>
+      <text class="form-hint">{{recognizing ? '正在上传并识别...' : '单张不超过10M，一天作业最多5张；上传后自动识别，确认后提交'}}</text>
     </view>
 
     <!-- 手动作业内容 -->
