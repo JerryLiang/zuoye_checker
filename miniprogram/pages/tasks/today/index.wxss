@@ -103,6 +103,28 @@
   white-space: nowrap;
 }
 
+.task-title-wrap {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.subject-label {
+  align-self: flex-start;
+  max-width: 180rpx;
+  padding: 3rpx 12rpx;
+  border-radius: 999rpx;
+  color: #4F6EF7;
+  background: rgba(79, 110, 247, 0.1);
+  font-size: 21rpx;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .task-actions {
   margin-top: 16rpx;
   padding-top: 16rpx;

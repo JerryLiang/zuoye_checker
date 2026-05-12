@@ -40,7 +40,10 @@
             <text wx:if="{{item.status === 2}}">✓</text>
             <text wx:elif="{{item.status === 3}}">…</text>
           </view>
-          <text class="task-title">{{item.title}}</text>
+          <view class="task-title-wrap">
+            <view class="subject-label">{{item.subject || '其他'}}</view>
+            <text class="task-title">{{item.title}}</text>
+          </view>
         </view>
         <text class="tag {{item.status === 2 ? 'tag-done' : (item.status === 3 ? 'tag-submitted' : 'tag-pending')}}">
           {{item.status === 2 ? '已完成' : (item.status === 3 ? '已提交' : '待完成')}}

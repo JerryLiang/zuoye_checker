@@ -30,6 +30,10 @@ Page({
         }
     },
     async onShow() {
+        if (wx.getStorageSync('activeRole') === 'parent') {
+            wx.navigateTo({ url: '/pages/parent/home/index' });
+            return;
+        }
         if (this.data.currentChildId) {
             await this.loadChildren();
             await this.loadTodayTasks();
