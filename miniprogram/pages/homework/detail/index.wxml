@@ -27,45 +27,58 @@
     </view>
 
     <!-- 任务列表 -->
-    <view class="section-title">任务列表</view>
+    <view class="section-title">按科目查看任务</view>
 
     <view wx:if="{{tasks.length === 0}}" class="empty-state">
       <text class="empty-text">暂无任务</text>
     </view>
 
     <block wx:else>
-      <view
-        wx:for="{{tasks}}"
-        wx:key="_id"
-        class="task-card {{item.status === 2 ? 'done' : (item.status === 3 ? 'submitted' : '')}}"
-      >
-        <view class="task-top">
-          <view class="task-left">
-            <view class="task-check {{item.status === 2 ? 'checked' : (item.status === 3 ? 'submitted' : 'pending')}}">
-              <text wx:if="{{item.status === 2}}">✓</text>
-              <text wx:elif="{{item.status === 3}}">…</text>
+      <view wx:for="{{subjectGroups}}" wx:for-item="group" wx:key="subject" class="subject-section">
+        <view class="subject-header">
+          <text class="subject-name">{{group.subject}}</text>
+          <text class="subject-count">{{group.tasks.length}} 项</text>
+        </view>
+
+        <view
+          wx:for="{{group.tasks}}"
+          wx:for-item="item"
+          wx:key="_id"
+          class="task-card {{item.status === 2 ? 'done' : (item.status === 3 ? 'submitted' : '')}}"
+          data-id="{{item._id}}"
+          data-status="{{item.status}}"
+          bindtap="goSubmit"
+        >
+          <view class="task-top">
+            <view class="task-left">
+              <view class="task-check {{item.status === 2 ? 'checked' : (item.status === 3 ? 'submitted' : 'pending')}}">
+                <text wx:if="{{item.status === 2}}">✓</text>
+                <text wx:elif="{{item.status === 3}}">…</text>
+              </view>
+              <view class="task-title-wrap">
+                <text class="task-title">{{item.title}}</text>
+                <text class="task-action-tip">{{item.status === 2 || canManage ? '点开查看' : (item.status === 3 ? '点开修改提交' : '点开提交')}}</text>
+              </view>
             </view>
-            <text class="task-title">{{item.title}}</text>
+            <text class="status-tag {{item.status === 2 ? 'tag-done' : (item.status === 3 ? 'tag-submitted' : 'tag-pending')}}">
+              {{item.status === 2 ? '已完成' : (item.status === 3 ? '已提交' : '待完成')}}
+            </text>
           </view>
-          <text class="status-tag {{item.status === 2 ? 'tag-done' : (item.status === 3 ? 'tag-submitted' : 'tag-pending')}}">
-            {{item.status === 2 ? '已完成' : (item.status === 3 ? '已提交' : '待完成')}}
-          </text>
-        </view>
 
-        <!-- 提交信息 -->
-        <view class="submission-info" wx:if="{{item.submission}}">
-          <view class="score-badge {{item.submission.check_result && item.submission.check_result.is_passed ? 'pass' : 'fail'}}">
-            {{item.status === 3 ? '待家长检查' : (item.submission.check_result ? item.submission.check_result.score + '分' : '待批改')}}
+          <!-- 提交信息 -->
+          <view class="submission-info" wx:if="{{item.submission}}">
+            <view class="score-badge {{item.submission.check_result && item.submission.check_result.is_passed ? 'pass' : 'fail'}}">
+              {{item.status === 3 ? '待家长检查' : (item.submission.check_result ? item.submission.check_result.score + '分' : '待批改')}}
+            </view>
+            <text class="feedback" wx:if="{{item.submission.check_result && item.submission.check_result.feedback}}">
+              {{item.submission.check_result.feedback}}
+            </text>
           </view>
-          <text class="feedback" wx:if="{{item.submission.check_result && item.submission.check_result.feedback}}">
-            {{item.submission.check_result.feedback}}
-          </text>
-        </view>
 
-        <!-- 操作 -->
-        <view class="task-actions" wx:if="{{(item.status === 1 && !canManage) || (item.status === 3 && canManage)}}">
-          <view wx:if="{{item.status === 1 && !canManage}}" class="btn-submit" data-id="{{item._id}}" bindtap="goSubmit">去提交</view>
-          <view wx:if="{{item.status === 3 && canManage}}" class="btn-submit approve" data-id="{{item._id}}" bindtap="onApproveTask">检查通过</view>
+          <!-- 操作 -->
+          <view class="task-actions" wx:if="{{item.status === 3 && canManage}}" catchtap="noop">
+            <view class="btn-submit approve" data-id="{{item._id}}" bindtap="onApproveTask">检查通过</view>
+          </view>
         </view>
       </view>
     </block>

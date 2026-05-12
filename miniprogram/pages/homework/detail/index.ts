@@ -2,10 +2,13 @@ import { homeworkApi, HomeworkBatch, TaskInBatch } from '../../../api/homework';
 import { taskApi } from '../../../api/task';
 import { requireParentAuth } from '../../../utils/parentAuth';
 
+type TaskSubjectGroup = { subject: string; tasks: TaskInBatch[] };
+
 Page({
   data: {
     batch: null as HomeworkBatch | null,
     tasks: [] as TaskInBatch[],
+    subjectGroups: [] as TaskSubjectGroup[],
     loading: true,
     batchId: '',
     doneCount: 0,
@@ -24,16 +27,23 @@ Page({
     }
   },
 
+  async onShow() {
+    if (this.data.batchId) {
+      await this.loadDetail(this.data.batchId);
+    }
+  },
+
   async loadDetail(id: string) {
     try {
       this.setData({ loading: true });
       const res = await homeworkApi.get(id);
       const batch = res.data;
       const tasks = batch.tasks || [];
+      const subjectGroups = this.buildSubjectGroups(tasks);
       const doneCount = tasks.filter((t: TaskInBatch) => t.status === 2).length;
       const totalCount = tasks.length;
       const progressPct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
-      this.setData({ batch, tasks, doneCount, totalCount, progressPct });
+      this.setData({ batch, tasks, subjectGroups, doneCount, totalCount, progressPct });
     } catch (_e) {
       wx.showToast({ title: '加载失败', icon: 'none' });
     } finally {
@@ -43,8 +53,27 @@ Page({
 
   goSubmit(e: WechatMiniprogram.BaseEvent) {
     const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
+    const status = Number(e.currentTarget.dataset.status || 1);
+    const mode = this.data.canManage || status === 2 ? 'view' : 'edit';
+    const role = this.data.canManage ? 'parent' : 'child';
+    wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}&mode=${mode}&role=${role}` });
   },
+
+  buildSubjectGroups(tasks: TaskInBatch[]): TaskSubjectGroup[] {
+    const groups: TaskSubjectGroup[] = [];
+    tasks.forEach(task => {
+      const subject = task.subject || '其他';
+      let group = groups.find(item => item.subject === subject);
+      if (!group) {
+        group = { subject, tasks: [] };
+        groups.push(group);
+      }
+      group.tasks.push(task);
+    });
+    return groups;
+  },
+
+  noop() {},
 
   async onApproveTask(e: WechatMiniprogram.BaseEvent) {
     if (!this.data.canManage) return;

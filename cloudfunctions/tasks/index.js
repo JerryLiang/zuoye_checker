@@ -18,6 +18,8 @@ exports.main = async (event, context) => {
 
   try {
     switch (action) {
+      case 'get':
+        return await getTask(user._id, id, data);
       case 'today':
         return await getTodayTasks(user._id, data);
       case 'submit':
@@ -31,6 +33,20 @@ exports.main = async (event, context) => {
     return { code: 500, message: err.message, data: null };
   }
 };
+
+async function getTask(userId, taskId, data = {}) {
+  const { child_id } = data;
+  if (!child_id) {
+    return { code: 400, message: '缺少child_id', data: null };
+  }
+
+  const taskCheck = await getOwnedTask(userId, taskId, child_id);
+  if (taskCheck.error) return taskCheck.error;
+
+  const task = taskCheck.task;
+  await attachLatestSubmission(task, child_id);
+  return { code: 0, message: 'ok', data: task };
+}
 
 async function getTodayTasks(userId, data) {
   const { child_id, date } = data;
@@ -86,9 +102,7 @@ async function submitTask(userId, taskId, data) {
   if (task.status === 2) {
     return { code: 409, message: '任务已完成，不能重复提交', data: null };
   }
-  if (task.status === 3) {
-    return { code: 409, message: '任务已提交，等待家长检查', data: null };
-  }
+  const isModify = task.status === 3;
 
   const now = db.serverDate();
 
@@ -104,15 +118,32 @@ async function submitTask(userId, taskId, data) {
   };
 
   const claimRes = await db.collection('task_items')
-    .where({ _id: taskId, child_id, status: 1 })
+    .where({ _id: taskId, child_id, status: _.in([1, 3]) })
     .update({ data: { status: 3, updated_at: now } });
 
   if (claimRes.stats.updated === 0) {
     return { code: 409, message: '任务状态已变化，请刷新后重试', data: null };
   }
 
-  const submissionRes = await db.collection('task_submissions').add({ data: submissionData });
-  const submissionId = submissionRes._id;
+  let submissionId;
+  if (isModify) {
+    const existingSubmissionRes = await db.collection('task_submissions')
+      .where({ task_id: taskId, child_id })
+      .orderBy('submitted_at', 'desc')
+      .limit(1)
+      .get();
+    if (existingSubmissionRes.data.length > 0) {
+      submissionId = existingSubmissionRes.data[0]._id;
+      await db.collection('task_submissions').doc(submissionId).update({
+        data: { ...submissionData, updated_at: now },
+      });
+    }
+  }
+
+  if (!submissionId) {
+    const submissionRes = await db.collection('task_submissions').add({ data: submissionData });
+    submissionId = submissionRes._id;
+  }
 
   const checkData = {
     submission_id: submissionId,
@@ -129,14 +160,14 @@ async function submitTask(userId, taskId, data) {
     created_at: now,
   };
 
-  const checkRes = await db.collection('check_results').add({ data: checkData });
+  const checkResult = await upsertCheckResult(taskId, submissionId, checkData, now);
 
   return {
     code: 0,
     message: 'submitted_pending_review',
     data: {
       submission: { _id: submissionId, ...submissionData },
-      check_result: { _id: checkRes._id, ...checkData },
+      check_result: checkResult,
     },
   };
 }
@@ -221,6 +252,26 @@ async function reviewTask(userId, taskId, data = {}) {
       check_result: checkResult,
     },
   };
+}
+
+async function attachLatestSubmission(task, childId) {
+  const submissionRes = await db.collection('task_submissions')
+    .where({ task_id: task._id, child_id: childId })
+    .orderBy('submitted_at', 'desc')
+    .limit(1)
+    .get();
+
+  if (submissionRes.data.length === 0) return task;
+
+  task.submission = submissionRes.data[0];
+  const checkRes = await db.collection('check_results')
+    .where({ submission_id: task.submission._id, task_id: task._id })
+    .limit(1)
+    .get();
+  if (checkRes.data.length > 0) {
+    task.submission.check_result = checkRes.data[0];
+  }
+  return task;
 }
 
 async function getOwnedTask(userId, taskId, childId) {

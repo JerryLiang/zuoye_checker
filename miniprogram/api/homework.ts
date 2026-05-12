@@ -18,6 +18,7 @@ export interface HomeworkBatch {
 export interface TaskInBatch {
   _id: string;
   title: string;
+  subject?: string;
   status: 1 | 2 | 3; // 1待完成 2已完成 3已提交待家长检查
   submission?: {
     _id: string;

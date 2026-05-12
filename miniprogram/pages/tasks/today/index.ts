@@ -48,7 +48,9 @@ Page({
 
   goSubmit(e: WechatMiniprogram.BaseEvent) {
     const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}` });
+    const status = Number(e.currentTarget.dataset.status || 1);
+    const mode = status === 2 ? 'view' : 'edit';
+    wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}&mode=${mode}&role=child` });
   },
 
   async onRefresh() {

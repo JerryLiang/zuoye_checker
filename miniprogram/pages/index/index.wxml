@@ -61,6 +61,9 @@
         wx:for="{{todayTasks}}"
         wx:key="_id"
         class="task-item {{item.status === 2 ? 'done' : (item.status === 3 ? 'submitted' : '')}}"
+        data-id="{{item._id}}"
+        data-status="{{item.status}}"
+        bindtap="goTaskSubmit"
       >
         <view class="task-left">
           <view class="task-dot {{item.status === 2 ? 'done' : (item.status === 3 ? 'submitted' : '')}}"></view>
@@ -70,8 +73,8 @@
           <text class="tag {{item.status === 2 ? 'tag-done' : (item.status === 3 ? 'tag-submitted' : 'tag-pending')}}">
             {{item.status === 2 ? '已完成' : (item.status === 3 ? '已提交' : '待完成')}}
           </text>
-          <view wx:if="{{item.status === 1}}" class="btn-go" data-id="{{item._id}}" bindtap="goTaskSubmit">
-            去完成
+          <view class="btn-go" data-id="{{item._id}}" data-status="{{item.status}}" catchtap="goTaskSubmit">
+            {{item.status === 2 ? '查看' : (item.status === 3 ? '修改' : '去完成')}}
           </view>
         </view>
       </view>

@@ -1,31 +1,73 @@
-import { taskApi } from '../../../api/task';
+import { taskApi, TaskItem } from '../../../api/task';
 import { uploadApi } from '../../../api/upload';
 
 Page({
   data: {
     taskId: '',
+    task: null as TaskItem | null,
     text: '',
     submitting: false,
     uploading: false,
+    loading: false,
     submitMode: 'text' as 'text' | 'photo',
     imagePath: '',
     fileAssetId: '',
+    readOnly: false,
+    role: 'child' as 'child' | 'parent',
+    statusText: '',
   },
 
-  onLoad(query: Record<string, string>) {
-    this.setData({ taskId: query.taskId || '' });
+  async onLoad(query: Record<string, string>) {
+    const role = query.role === 'parent' ? 'parent' : 'child';
+    const readOnly = query.mode === 'view' || role === 'parent';
+    this.setData({ taskId: query.taskId || '', readOnly, role });
+    await this.loadTask();
+  },
+
+  async loadTask() {
+    const app = getApp<IAppOption>();
+    const childId = app.globalData.currentChildId;
+    if (!this.data.taskId || !childId) return;
+
+    try {
+      this.setData({ loading: true });
+      const res = await taskApi.get(this.data.taskId, childId);
+      const task = res.data as TaskItem;
+      const submission = task.submission;
+      const nextMode = submission?.file_asset_id ? 'photo' : 'text';
+      const nextReadOnly = this.data.readOnly || task.status === 2;
+      this.setData({
+        task,
+        readOnly: nextReadOnly,
+        statusText: this.getStatusText(task.status),
+        text: submission?.submit_text || '',
+        submitMode: nextMode,
+        fileAssetId: submission?.file_asset_id || '',
+      });
+    } catch (e) {
+      wx.showToast({ title: e instanceof Error ? e.message : '加载失败', icon: 'none' });
+    } finally {
+      this.setData({ loading: false });
+    }
+  },
+
+  getStatusText(status: 1 | 2 | 3) {
+    return status === 2 ? '已完成' : (status === 3 ? '已提交，等待家长检查' : '待完成');
   },
 
   onModeChange(e: WechatMiniprogram.BaseEvent) {
+    if (this.data.readOnly) return;
     const mode = e.currentTarget.dataset.mode as 'text' | 'photo';
     this.setData({ submitMode: mode });
   },
 
   onTextInput(e: WechatMiniprogram.TextareaInput) {
+    if (this.data.readOnly) return;
     this.setData({ text: e.detail.value });
   },
 
   async chooseSubmitImage() {
+    if (this.data.readOnly) return;
     const app = getApp<IAppOption>();
     if (!app.globalData.currentChildId) {
       wx.showToast({ title: '请先添加学生', icon: 'none' });
@@ -54,7 +96,7 @@ Page({
   },
 
   async onSubmit() {
-    if (this.data.submitting || this.data.uploading) return;
+    if (this.data.readOnly || this.data.submitting || this.data.uploading) return;
 
     const app = getApp<IAppOption>();
     if (!app.globalData.currentChildId) {
@@ -77,7 +119,7 @@ Page({
 
     try {
       this.setData({ submitting: true });
-      const res = await taskApi.submit(this.data.taskId, {
+      await taskApi.submit(this.data.taskId, {
         child_id: app.globalData.currentChildId,
         submit_type: hasImage ? 2 : 1,
         submit_text: hasText ? this.data.text.trim() : undefined,
@@ -86,7 +128,7 @@ Page({
 
       wx.showModal({
         title: '提交成功',
-        content: '提交成功，等待爸爸妈妈检查',
+        content: '状态已更新，等待爸爸妈妈检查',
         showCancel: false,
         success: () => wx.navigateBack(),
       });

@@ -1,29 +1,45 @@
 <view class="page">
   <view class="card">
-    <view class="submit-title">完成任务</view>
-    <view class="submit-sub">输入答案/描述，或者拍照上传作业，提交后会立即获得反馈。</view>
+    <view class="submit-title">{{readOnly ? '查看任务' : '完成任务'}}</view>
+    <view class="submit-sub" wx:if="{{task}}">
+      {{task.subject || '其他'}}｜{{statusText}}
+    </view>
+    <view class="task-title-box" wx:if="{{task}}">{{task.title}}</view>
+    <view class="submit-sub" wx:else>{{readOnly ? '查看提交内容和批改结果。' : '输入答案/描述，或者拍照上传作业，提交后等待家长检查。'}}</view>
 
-    <view class="mode-tabs">
+    <view class="check-result" wx:if="{{task && task.submission && task.submission.check_result}}">
+      <view class="check-title">反馈</view>
+      <view class="check-text">{{task.submission.check_result.feedback}}</view>
+    </view>
+
+    <view class="mode-tabs" wx:if="{{!readOnly}}">
       <view class="mode-tab {{submitMode === 'text' ? 'active' : ''}}" data-mode="text" bindtap="onModeChange">输入答案</view>
       <view class="mode-tab {{submitMode === 'photo' ? 'active' : ''}}" data-mode="photo" bindtap="onModeChange">拍照上传</view>
     </view>
 
-    <view class="form-group" wx:if="{{submitMode === 'text'}}">
-      <text class="form-label">答案/完成描述</text>
+    <view class="readonly-label" wx:if="{{readOnly && fileAssetId}}">已上传作业图片</view>
+
+    <view class="form-group" wx:if="{{submitMode === 'text' || (readOnly && text)}}">
+      <text class="form-label">{{readOnly ? '答案/完成描述' : '答案/完成描述'}}</text>
       <textarea
-        class="textarea-field"
+        class="textarea-field {{readOnly ? 'readonly' : ''}}"
         placeholder="请输入作业答案或完成描述，至少写清楚你完成了什么..."
         bindinput="onTextInput"
         maxlength="-1"
+        disabled="{{readOnly}}"
         value="{{text}}"
       ></textarea>
-      <text class="form-hint">普通任务当前规则：文字不少于 6 个字即可通过；数学题会优先按标准答案批改。</text>
+      <text wx:if="{{!readOnly}}" class="form-hint">普通任务当前规则：文字不少于 6 个字即可提交；数学题会优先按标准答案批改。</text>
     </view>
 
-    <view class="form-group" wx:if="{{submitMode === 'photo'}}">
+    <view class="form-group" wx:if="{{!readOnly && submitMode === 'photo'}}">
       <text class="form-label">上传作业照片</text>
       <view class="upload-box" bindtap="chooseSubmitImage">
         <image wx:if="{{imagePath}}" class="preview-image" src="{{imagePath}}" mode="aspectFill"></image>
+        <block wx:elif="{{fileAssetId}}">
+          <view class="upload-icon">✅</view>
+          <view class="upload-text">已上传图片，可重新选择</view>
+        </block>
         <block wx:else>
           <view class="upload-icon">📷</view>
           <view class="upload-text">拍照或从相册选择</view>
@@ -32,7 +48,7 @@
       <text class="form-hint">{{uploading ? '正在上传...' : '上传图片也可以补充文字说明，方便老师/家长查看。'}}</text>
     </view>
 
-    <view class="form-group" wx:if="{{submitMode === 'photo'}}">
+    <view class="form-group" wx:if="{{!readOnly && submitMode === 'photo'}}">
       <text class="form-label">补充说明（可选）</text>
       <textarea
         class="textarea-field small"
@@ -43,8 +59,8 @@
       ></textarea>
     </view>
 
-    <view class="btn-primary {{submitting || uploading ? 'disabled' : ''}}" bindtap="onSubmit">
-      <text>{{submitting ? '提交中...' : '提交检查'}}</text>
+    <view wx:if="{{!readOnly}}" class="btn-primary {{submitting || uploading ? 'disabled' : ''}}" bindtap="onSubmit">
+      <text>{{submitting ? '提交中...' : (task && task.status === 3 ? '保存修改' : '提交检查')}}</text>
     </view>
   </view>
 </view>

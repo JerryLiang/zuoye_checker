@@ -103,6 +103,28 @@
 }
 
 /* 任务卡片 */
+.subject-section {
+  margin-bottom: 24rpx;
+}
+
+.subject-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8rpx 4rpx 14rpx;
+}
+
+.subject-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #4F6EF7;
+}
+
+.subject-count {
+  font-size: 24rpx;
+  color: #999;
+}
+
 .task-card {
   background: #fff;
   border-radius: 20rpx;
@@ -163,6 +185,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.task-title-wrap {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.task-action-tip {
+  font-size: 22rpx;
+  color: #999;
 }
 
 .status-tag {

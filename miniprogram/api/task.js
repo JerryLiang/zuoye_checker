@@ -16,6 +16,9 @@ exports.taskApi = {
     today(child_id, date) {
         return callTasks('today', { data: { child_id, date } });
     },
+    get(taskId, child_id) {
+        return callTasks('get', { id: taskId, data: { child_id } });
+    },
     submit(taskId, payload) {
         return callTasks('submit', { id: taskId, data: payload });
     },

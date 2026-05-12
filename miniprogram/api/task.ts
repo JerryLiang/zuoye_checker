@@ -1,7 +1,20 @@
 export interface TaskItem {
   _id: string;
   title: string;
+  subject?: string;
   status: 1 | 2 | 3; // 1待完成 2已完成 3已提交待家长检查
+  submission?: {
+    _id: string;
+    submit_type: 1 | 2 | 3;
+    submit_text?: string;
+    file_asset_id?: string;
+    submitted_at: string;
+    check_result?: {
+      is_passed: boolean;
+      score: number;
+      feedback: string;
+    };
+  };
 }
 
 async function callTasks(action: string, data: any = {}) {
@@ -19,6 +32,9 @@ async function callTasks(action: string, data: any = {}) {
 export const taskApi = {
   today(child_id: string, date?: string) {
     return callTasks('today', { data: { child_id, date } });
+  },
+  get(taskId: string, child_id: string) {
+    return callTasks('get', { id: taskId, data: { child_id } });
   },
   submit(taskId: string, payload: { child_id: string; submit_type: 1 | 2 | 3; submit_text?: string; file_asset_id?: string }) {
     return callTasks('submit', { id: taskId, data: payload });
