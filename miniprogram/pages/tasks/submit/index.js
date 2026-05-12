@@ -16,6 +16,8 @@ Page({
         readOnly: false,
         role: 'child',
         statusText: '',
+        canApprove: false,
+        approving: false,
     },
     async onLoad(query) {
         const role = query.role === 'parent' ? 'parent' : 'child';
@@ -35,9 +37,11 @@ Page({
             const submission = task.submission;
             const nextMode = submission?.file_asset_id ? 'photo' : 'text';
             const nextReadOnly = this.data.readOnly || task.status === 2;
+            const canApprove = this.data.role === 'parent' && task.status === 3;
             this.setData({
                 task,
                 readOnly: nextReadOnly,
+                canApprove,
                 statusText: this.getStatusText(task.status),
                 text: submission?.submit_text || '',
                 submitMode: nextMode,
@@ -134,6 +138,33 @@ Page({
         }
         finally {
             this.setData({ submitting: false });
+        }
+    },
+    async onApproveTask() {
+        if (!this.data.canApprove || this.data.approving || !this.data.taskId)
+            return;
+        const app = getApp();
+        if (!app.globalData.currentChildId) {
+            wx.showToast({ title: '请先选择学生', icon: 'none' });
+            return;
+        }
+        const res = await wx.showModal({
+            title: '确认检查通过',
+            content: '检查通过后任务会变为已完成，并发放奖励积分。',
+        });
+        if (!res.confirm)
+            return;
+        try {
+            this.setData({ approving: true });
+            await task_1.taskApi.review(this.data.taskId, { child_id: app.globalData.currentChildId, approved: true });
+            wx.showToast({ title: '已完成并发放积分', icon: 'success' });
+            await this.loadTask();
+        }
+        catch (e) {
+            wx.showToast({ title: e instanceof Error ? e.message : '检查失败', icon: 'none' });
+        }
+        finally {
+            this.setData({ approving: false });
         }
     },
 });
