@@ -1,4 +1,3 @@
-import { authApi } from '../../api/auth';
 import { childApi, ChildItem } from '../../api/child';
 import { taskApi, TaskItem } from '../../api/task';
 
@@ -18,7 +17,8 @@ Page({
     this.setGreeting();
     try {
       this.setData({ loading: true });
-      await this.ensureLogin();
+      const app = getApp<IAppOption>();
+      await app.globalData.loginPromise;
       await this.loadChildren();
       await this.loadTodayTasks();
     } catch (_e) {
@@ -53,20 +53,6 @@ Page({
     else if (hour < 14) greeting = '中午好';
     else if (hour < 18) greeting = '下午好';
     this.setData({ greeting });
-  },
-
-  async ensureLogin() {
-    const app = getApp<IAppOption>();
-    if (app.globalData.userId && app.globalData.token) {
-      return;
-    }
-
-    const loginRes = await authApi.wechatLogin({ nickname: '家长用户' });
-
-    app.globalData.token = loginRes.data.token;
-    app.globalData.userId = loginRes.data.user.id;
-    wx.setStorageSync('token', loginRes.data.token);
-    wx.setStorageSync('userId', loginRes.data.user.id);
   },
 
   async loadChildren() {
@@ -164,5 +150,6 @@ interface IAppOption {
     token: string;
     userId: string;
     currentChildId: string;
+    loginPromise: Promise<void> | null;
   };
 }

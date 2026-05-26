@@ -17,6 +17,8 @@ Page({
   async loadStatus() {
     try {
       this.setData({ loading: true });
+      const app = getApp<IAppOption>();
+      await app.globalData.loginPromise;
       const res = await authApi.parentStatus();
       this.setData({ hasPin: !!res.data.has_pin });
     } catch (e: any) {
@@ -69,3 +71,12 @@ Page({
     wx.redirectTo({ url: redirect });
   },
 });
+
+interface IAppOption {
+  globalData: {
+    token: string;
+    userId: string;
+    currentChildId: string;
+    loginPromise: Promise<void> | null;
+  };
+}
