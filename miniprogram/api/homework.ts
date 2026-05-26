@@ -85,7 +85,11 @@ export const homeworkApi = {
     return callHomeworks('create', { data: payload });
   },
   recognizeImage(file_asset_id: string) {
-    return callHomeworks('recognize_image', { data: { file_asset_id } }, { timeout: 60000 }) as Promise<{ code: number; message: string; data: HomeworkRecognitionResult }>;
+    return callHomeworks('recognize_image', { data: { file_asset_id } }, { timeout: 60000 }) as Promise<{
+      code: number;
+      message: string;
+      data: HomeworkRecognitionResult;
+    }>;
   },
   update(id: string, payload: Partial<Pick<HomeworkBatch, 'subject' | 'raw_text' | 'status'>>) {
     return callHomeworks('update', { id, data: payload });

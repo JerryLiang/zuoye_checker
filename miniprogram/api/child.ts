@@ -30,7 +30,13 @@ export const childApi = {
   get(id: string) {
     return callChildren('get', { id });
   },
-  create(payload: { name: string; age_group: '3-6' | '7-9' | '10-12'; gender?: 1 | 2; birth_date?: string; grade?: string }) {
+  create(payload: {
+    name: string;
+    age_group: '3-6' | '7-9' | '10-12';
+    gender?: 1 | 2;
+    birth_date?: string;
+    grade?: string;
+  }) {
     return callChildren('create', { data: payload });
   },
   update(id: string, payload: Partial<Pick<ChildItem, 'name' | 'age_group' | 'gender' | 'birth_date' | 'grade'>>) {

@@ -50,9 +50,7 @@ async function deleteTask(userId, taskId, data = {}) {
     return { code: 409, message: '只能删除学生未提交的任务', data: null };
   }
 
-  const removeRes = await db.collection('task_items')
-    .where({ _id: taskId, child_id, status: 1 })
-    .remove();
+  const removeRes = await db.collection('task_items').where({ _id: taskId, child_id, status: 1 }).remove();
 
   if (removeRes.stats.removed === 0) {
     return { code: 409, message: '任务状态已变化，请刷新后重试', data: null };
@@ -83,9 +81,7 @@ async function getTodayTasks(userId, data) {
   }
 
   // 验证学生归属
-  const childRes = await db.collection('children')
-    .where({ _id: child_id, user_id: userId })
-    .get();
+  const childRes = await db.collection('children').where({ _id: child_id, user_id: userId }).get();
 
   if (childRes.data.length === 0) {
     return { code: 404, message: '学生不存在', data: null };
@@ -95,7 +91,8 @@ async function getTodayTasks(userId, data) {
   const targetDate = date || getTodayDate();
 
   // 获取该日期的作业批次
-  const batchRes = await db.collection('homework_batches')
+  const batchRes = await db
+    .collection('homework_batches')
     .where({ user_id: userId, child_id, batch_date: targetDate })
     .get();
 
@@ -103,10 +100,11 @@ async function getTodayTasks(userId, data) {
     return { code: 0, message: 'ok', data: [] };
   }
 
-  const batchIds = batchRes.data.map(b => b._id);
+  const batchIds = batchRes.data.map((b) => b._id);
 
   // 获取任务
-  const tasksRes = await db.collection('task_items')
+  const tasksRes = await db
+    .collection('task_items')
     .where({ batch_id: _.in(batchIds), child_id })
     .orderBy('sort_order', 'asc')
     .orderBy('_id', 'asc')
@@ -144,7 +142,8 @@ async function submitTask(userId, taskId, data) {
     created_at: now,
   };
 
-  const claimRes = await db.collection('task_items')
+  const claimRes = await db
+    .collection('task_items')
     .where({ _id: taskId, child_id, status: _.in([1, 3]) })
     .update({ data: { status: 3, updated_at: now } });
 
@@ -154,16 +153,20 @@ async function submitTask(userId, taskId, data) {
 
   let submissionId;
   if (isModify) {
-    const existingSubmissionRes = await db.collection('task_submissions')
+    const existingSubmissionRes = await db
+      .collection('task_submissions')
       .where({ task_id: taskId, child_id })
       .orderBy('submitted_at', 'desc')
       .limit(1)
       .get();
     if (existingSubmissionRes.data.length > 0) {
       submissionId = existingSubmissionRes.data[0]._id;
-      await db.collection('task_submissions').doc(submissionId).update({
-        data: { ...submissionData, updated_at: now },
-      });
+      await db
+        .collection('task_submissions')
+        .doc(submissionId)
+        .update({
+          data: { ...submissionData, updated_at: now },
+        });
     }
   }
 
@@ -216,7 +219,8 @@ async function reviewTask(userId, taskId, data = {}) {
     return { code: 409, message: '任务尚未提交，不能检查', data: null };
   }
 
-  const submissionRes = await db.collection('task_submissions')
+  const submissionRes = await db
+    .collection('task_submissions')
     .where({ task_id: taskId, child_id })
     .orderBy('submitted_at', 'desc')
     .limit(1)
@@ -230,24 +234,36 @@ async function reviewTask(userId, taskId, data = {}) {
   const now = db.serverDate();
 
   if (!approved) {
-    await db.collection('task_items').doc(taskId).update({
-      data: { status: 1, updated_at: now },
-    });
-    await db.collection('task_submissions').doc(submission._id).update({
-      data: { review_status: 3, reviewed_at: now, review_feedback: feedback || '请按家长要求补充后重新提交' },
-    });
-    await upsertCheckResult(taskId, submission._id, {
-      check_engine: 'parent_review',
-      is_passed: 0,
-      score: 40,
-      feedback: feedback || '请按家长要求补充后重新提交',
-      checked_at: now,
-      updated_at: now,
-    }, now);
+    await db
+      .collection('task_items')
+      .doc(taskId)
+      .update({
+        data: { status: 1, updated_at: now },
+      });
+    await db
+      .collection('task_submissions')
+      .doc(submission._id)
+      .update({
+        data: { review_status: 3, reviewed_at: now, review_feedback: feedback || '请按家长要求补充后重新提交' },
+      });
+    await upsertCheckResult(
+      taskId,
+      submission._id,
+      {
+        check_engine: 'parent_review',
+        is_passed: 0,
+        score: 40,
+        feedback: feedback || '请按家长要求补充后重新提交',
+        checked_at: now,
+        updated_at: now,
+      },
+      now,
+    );
     return { code: 0, message: 'rejected', data: { task_id: taskId, status: 1 } };
   }
 
-  const claimRes = await db.collection('task_items')
+  const claimRes = await db
+    .collection('task_items')
     .where({ _id: taskId, child_id, status: 3 })
     .update({ data: { status: 2, updated_at: now } });
 
@@ -255,18 +271,26 @@ async function reviewTask(userId, taskId, data = {}) {
     return { code: 409, message: '任务状态已变化，请刷新后重试', data: null };
   }
 
-  await db.collection('task_submissions').doc(submission._id).update({
-    data: { review_status: 2, reviewed_at: now, review_feedback: feedback || '爸爸妈妈已检查通过' },
-  });
+  await db
+    .collection('task_submissions')
+    .doc(submission._id)
+    .update({
+      data: { review_status: 2, reviewed_at: now, review_feedback: feedback || '爸爸妈妈已检查通过' },
+    });
 
-  const checkResult = await upsertCheckResult(taskId, submission._id, {
-    check_engine: 'parent_review',
-    is_passed: 1,
-    score: 100,
-    feedback: feedback || '爸爸妈妈已检查通过，完成得不错！',
-    checked_at: now,
-    updated_at: now,
-  }, now);
+  const checkResult = await upsertCheckResult(
+    taskId,
+    submission._id,
+    {
+      check_engine: 'parent_review',
+      is_passed: 1,
+      score: 100,
+      feedback: feedback || '爸爸妈妈已检查通过，完成得不错！',
+      checked_at: now,
+      updated_at: now,
+    },
+    now,
+  );
 
   await awardTaskCompletion(child_id, task, now);
 
@@ -282,7 +306,8 @@ async function reviewTask(userId, taskId, data = {}) {
 }
 
 async function attachLatestSubmission(task, childId) {
-  const submissionRes = await db.collection('task_submissions')
+  const submissionRes = await db
+    .collection('task_submissions')
     .where({ task_id: task._id, child_id: childId })
     .orderBy('submitted_at', 'desc')
     .limit(1)
@@ -291,7 +316,8 @@ async function attachLatestSubmission(task, childId) {
   if (submissionRes.data.length === 0) return task;
 
   task.submission = submissionRes.data[0];
-  const checkRes = await db.collection('check_results')
+  const checkRes = await db
+    .collection('check_results')
     .where({ submission_id: task.submission._id, task_id: task._id })
     .limit(1)
     .get();
@@ -302,17 +328,13 @@ async function attachLatestSubmission(task, childId) {
 }
 
 async function getOwnedTask(userId, taskId, childId) {
-  const childRes = await db.collection('children')
-    .where({ _id: childId, user_id: userId })
-    .get();
+  const childRes = await db.collection('children').where({ _id: childId, user_id: userId }).get();
 
   if (childRes.data.length === 0) {
     return { error: { code: 404, message: '学生不存在', data: null } };
   }
 
-  const taskRes = await db.collection('task_items')
-    .where({ _id: taskId, child_id: childId })
-    .get();
+  const taskRes = await db.collection('task_items').where({ _id: taskId, child_id: childId }).get();
 
   if (taskRes.data.length === 0) {
     return { error: { code: 404, message: '任务不存在', data: null } };
@@ -320,7 +342,8 @@ async function getOwnedTask(userId, taskId, childId) {
 
   const task = taskRes.data[0];
   if (task.batch_id) {
-    const batchRes = await db.collection('homework_batches')
+    const batchRes = await db
+      .collection('homework_batches')
       .where({ _id: task.batch_id, user_id: userId, child_id: childId })
       .get();
     if (batchRes.data.length === 0) {
@@ -332,7 +355,8 @@ async function getOwnedTask(userId, taskId, childId) {
 }
 
 async function upsertCheckResult(taskId, submissionId, data, now) {
-  const checkRes = await db.collection('check_results')
+  const checkRes = await db
+    .collection('check_results')
     .where({ submission_id: submissionId, task_id: taskId })
     .limit(1)
     .get();
@@ -354,20 +378,22 @@ async function upsertCheckResult(taskId, submissionId, data, now) {
 }
 
 async function awardTaskCompletion(childId, task, now) {
-  const existingRewardRes = await db.collection('reward_records')
+  const existingRewardRes = await db
+    .collection('reward_records')
     .where({ child_id: childId, source_type: 'task_complete', source_id: task._id })
     .limit(1)
     .get();
 
   if (existingRewardRes.data.length === 0) {
-    const accountRes = await db.collection('reward_accounts')
-      .where({ child_id: childId })
-      .get();
+    const accountRes = await db.collection('reward_accounts').where({ child_id: childId }).get();
 
     if (accountRes.data.length > 0) {
-      await db.collection('reward_accounts').doc(accountRes.data[0]._id).update({
-        data: { total_points: _.inc(2), updated_at: now },
-      });
+      await db
+        .collection('reward_accounts')
+        .doc(accountRes.data[0]._id)
+        .update({
+          data: { total_points: _.inc(2), updated_at: now },
+        });
     } else {
       await db.collection('reward_accounts').add({
         data: {
@@ -396,10 +422,9 @@ async function awardTaskCompletion(childId, task, now) {
     const batchRes = await db.collection('homework_batches').doc(task.batch_id).get();
     if (batchRes.data) {
       const batchDate = batchRes.data.batch_date;
-      const allCount = await db.collection('task_items')
-        .where({ batch_id: task.batch_id, child_id: childId })
-        .count();
-      const doneCount = await db.collection('task_items')
+      const allCount = await db.collection('task_items').where({ batch_id: task.batch_id, child_id: childId }).count();
+      const doneCount = await db
+        .collection('task_items')
         .where({ batch_id: task.batch_id, child_id: childId, status: 2 })
         .count();
 
@@ -412,10 +437,13 @@ async function awardTaskCompletion(childId, task, now) {
         updated_at: now,
       };
 
-      const completionRes = await db.collection('daily_completions').where({
-        child_id: childId,
-        completion_date: batchDate,
-      }).get();
+      const completionRes = await db
+        .collection('daily_completions')
+        .where({
+          child_id: childId,
+          completion_date: batchDate,
+        })
+        .get();
 
       if (completionRes.data.length > 0) {
         await db.collection('daily_completions').doc(completionRes.data[0]._id).update({ data: completionData });
@@ -432,7 +460,7 @@ function normalizeAnswer(value) {
   return String(value)
     .trim()
     .replace(/\s+/g, '')
-    .replace(/[，。；：]/g, match => ({ '，': ',', '。': '.', '；': ';', '：': ':' }[match] || match));
+    .replace(/[，。；：]/g, (match) => ({ '，': ',', '。': '.', '；': ';', '：': ':' })[match] || match);
 }
 
 function getTodayDate() {

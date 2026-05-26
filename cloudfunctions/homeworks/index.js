@@ -15,7 +15,8 @@ const _ = db.command;
 
 const HOMEWORK_AI_BASE_URL = process.env.HOMEWORK_AI_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 const HOMEWORK_AI_MODEL = process.env.HOMEWORK_AI_MODEL || 'qwen3-vl-flash';
-const HOMEWORK_AI_API_KEY = process.env.HOMEWORK_AI_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.BAILIAN_CODING_PLAN_API_KEY || '';
+const HOMEWORK_AI_API_KEY =
+  process.env.HOMEWORK_AI_API_KEY || process.env.DASHSCOPE_API_KEY || process.env.BAILIAN_CODING_PLAN_API_KEY || '';
 const HOMEWORK_AI_PROVIDER = String(process.env.HOMEWORK_AI_PROVIDER || '').toLowerCase();
 const TENCENT_SECRET_ID = process.env.TENCENT_SECRET_ID || '';
 const TENCENT_SECRET_KEY = process.env.TENCENT_SECRET_KEY || '';
@@ -31,7 +32,15 @@ exports.main = async (event, context) => {
   }
 
   try {
-    await ensureCollections(['users', 'children', 'homework_batches', 'task_items', 'task_submissions', 'check_results', 'file_assets']);
+    await ensureCollections([
+      'users',
+      'children',
+      'homework_batches',
+      'task_items',
+      'task_submissions',
+      'check_results',
+      'file_assets',
+    ]);
     const user = await getOrCreateUser(openid);
 
     switch (action) {
@@ -107,7 +116,8 @@ async function listHomeworks(userId, data = {}) {
     where.child_id = data.child_id;
   }
 
-  const res = await db.collection('homework_batches')
+  const res = await db
+    .collection('homework_batches')
     .where(where)
     .orderBy('batch_date', 'desc')
     .orderBy('_id', 'desc')
@@ -115,11 +125,9 @@ async function listHomeworks(userId, data = {}) {
 
   const batches = res.data || [];
   for (let i = 0; i < batches.length; i++) {
-    const tasksRes = await db.collection('task_items')
-      .where({ batch_id: batches[i]._id })
-      .get();
+    const tasksRes = await db.collection('task_items').where({ batch_id: batches[i]._id }).get();
     const tasks = tasksRes.data || [];
-    const completed = tasks.filter(task => task.status === 2).length;
+    const completed = tasks.filter((task) => task.status === 2).length;
     batches[i].total_tasks = tasks.length;
     batches[i].completed_tasks = completed;
     batches[i].progress_pct = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
@@ -129,9 +137,7 @@ async function listHomeworks(userId, data = {}) {
 }
 
 async function getHomework(userId, id) {
-  const res = await db.collection('homework_batches')
-    .where({ _id: id, user_id: userId })
-    .get();
+  const res = await db.collection('homework_batches').where({ _id: id, user_id: userId }).get();
 
   if (res.data.length === 0) {
     return { code: 404, message: '作业不存在', data: null };
@@ -140,7 +146,8 @@ async function getHomework(userId, id) {
   const batch = res.data[0];
 
   // 获取关联的任务。先校验批次归属，再按 batch_id 查询，避免越权读取。
-  const tasksRes = await db.collection('task_items')
+  const tasksRes = await db
+    .collection('task_items')
     .where({ batch_id: id })
     .orderBy('sort_order', 'asc')
     .orderBy('_id', 'asc')
@@ -150,7 +157,8 @@ async function getHomework(userId, id) {
 
   // 获取每个任务的提交记录
   for (let i = 0; i < tasks.length; i++) {
-    const submissionRes = await db.collection('task_submissions')
+    const submissionRes = await db
+      .collection('task_submissions')
       .where({ task_id: tasks[i]._id, child_id: batch.child_id })
       .orderBy('submitted_at', 'desc')
       .limit(1)
@@ -160,7 +168,8 @@ async function getHomework(userId, id) {
       tasks[i].submission = submissionRes.data[0];
 
       // 获取批改结果
-      const checkRes = await db.collection('check_results')
+      const checkRes = await db
+        .collection('check_results')
         .where({ submission_id: tasks[i].submission._id, task_id: tasks[i]._id })
         .limit(1)
         .get();
@@ -184,9 +193,7 @@ async function createHomework(userId, data) {
   }
 
   // 验证学生归属，防止给别人的 child_id 创建作业。
-  const childRes = await db.collection('children')
-    .where({ _id: data.child_id, user_id: userId })
-    .get();
+  const childRes = await db.collection('children').where({ _id: data.child_id, user_id: userId }).get();
 
   if (childRes.data.length === 0) {
     return { code: 404, message: '学生不存在', data: null };
@@ -218,9 +225,12 @@ async function createHomework(userId, data) {
   const items = normalizeTaskItems(data);
 
   // 数学自动批改答案：每行对应一个任务，仅数学科目启用。
-  const answerSegments = data.subject === '数学' && data.check_answers
-    ? String(data.check_answers).split(/[\n\r]+/).map(s => s.trim())
-    : [];
+  const answerSegments =
+    data.subject === '数学' && data.check_answers
+      ? String(data.check_answers)
+          .split(/[\n\r]+/)
+          .map((s) => s.trim())
+      : [];
 
   // 创建任务
   const tasks = [];
@@ -228,7 +238,7 @@ async function createHomework(userId, data) {
     const item = items[i];
     const title = item.text.substring(0, 255);
     const subject = item.subject || data.subject || null;
-    const expectedAnswer = subject === '数学' ? (answerSegments[i] || null) : null;
+    const expectedAnswer = subject === '数学' ? answerSegments[i] || null : null;
     const taskData = {
       batch_id: batchId,
       user_id: userId,
@@ -261,11 +271,11 @@ function normalizeTaskItems(data = {}) {
   const allowedSubjects = ['语文', '数学', '英语', '其他'];
   if (Array.isArray(data.task_items) && data.task_items.length > 0) {
     const items = data.task_items
-      .map(item => ({
-        subject: allowedSubjects.includes(item.subject) ? item.subject : (data.subject || '其他'),
+      .map((item) => ({
+        subject: allowedSubjects.includes(item.subject) ? item.subject : data.subject || '其他',
         text: String(item.text || '').trim(),
       }))
-      .filter(item => item.text);
+      .filter((item) => item.text);
     if (items.length > 0) {
       return items;
     }
@@ -273,14 +283,17 @@ function normalizeTaskItems(data = {}) {
 
   const raw = String(data.raw_text || '').trim();
   const segments = raw
-    ? raw.split(/[\n\r]+|[。；;]/).map(s => s.trim()).filter(Boolean)
+    ? raw
+        .split(/[\n\r]+|[。；;]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
     : [];
 
   if (segments.length === 0) {
     return [{ subject: data.subject || '其他', text: '完成老师布置的作业' }];
   }
 
-  return segments.map(text => ({ subject: data.subject || '其他', text }));
+  return segments.map((text) => ({ subject: data.subject || '其他', text }));
 }
 
 async function recognizeHomeworkImage(userId, data = {}) {
@@ -289,7 +302,8 @@ async function recognizeHomeworkImage(userId, data = {}) {
     return { code: 400, message: '缺少file_asset_id', data: null };
   }
 
-  const assetRes = await db.collection('file_assets')
+  const assetRes = await db
+    .collection('file_assets')
     .where({ _id: data.file_asset_id, user_id: userId })
     .limit(1)
     .get();
@@ -307,9 +321,10 @@ async function recognizeHomeworkImage(userId, data = {}) {
     const downloadRes = await cloud.downloadFile({ fileID: asset.fileID });
     const imageBuffer = downloadRes.fileContent;
     const mimeType = getImageMimeType(asset.file_ext);
-    const recognition = resolveAiProvider(HOMEWORK_AI_BASE_URL.replace(/\/$/, '')) === 'tencent_ocr'
-      ? await callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs })
-      : await callVisionModel({ imageBuffer, mimeType, debugLogs });
+    const recognition =
+      resolveAiProvider(HOMEWORK_AI_BASE_URL.replace(/\/$/, '')) === 'tencent_ocr'
+        ? await callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs })
+        : await callVisionModel({ imageBuffer, mimeType, debugLogs });
     const normalized = normalizeRecognitionResult(recognition);
     if (!normalized.recognized_items || normalized.recognized_items.length === 0) {
       normalized.debug_logs = debugLogs;
@@ -321,17 +336,20 @@ async function recognizeHomeworkImage(userId, data = {}) {
       data: normalized,
     };
   } catch (err) {
-    logAiDebug('error', {
-      message: err && err.message,
-      statusCode: err && err.statusCode,
-      responseBody: err && err.responseBody,
-      baseUrl: HOMEWORK_AI_BASE_URL,
-      model: HOMEWORK_AI_MODEL,
-    }, debugLogs);
+    logAiDebug(
+      'error',
+      {
+        message: err && err.message,
+        statusCode: err && err.statusCode,
+        responseBody: err && err.responseBody,
+        baseUrl: HOMEWORK_AI_BASE_URL,
+        model: HOMEWORK_AI_MODEL,
+      },
+      debugLogs,
+    );
     return buildRecognitionFallback('ai_recognition_failed', err && err.message, debugLogs);
   }
 }
-
 
 function hasRecognitionProviderConfig() {
   const provider = resolveAiProvider(HOMEWORK_AI_BASE_URL.replace(/\/$/, ''));
@@ -342,9 +360,10 @@ function hasRecognitionProviderConfig() {
 }
 
 function buildRecognitionFallback(reason, detail, debugLogs = []) {
-  const message = reason === 'ai_not_configured'
-    ? 'AI模型未配置'
-    : `AI识别失败${detail ? `：${String(detail).slice(0, 80)}` : '，请稍后重试'}`;
+  const message =
+    reason === 'ai_not_configured'
+      ? 'AI模型未配置'
+      : `AI识别失败${detail ? `：${String(detail).slice(0, 80)}` : '，请稍后重试'}`;
   return {
     code: 0,
     message: reason,
@@ -368,7 +387,6 @@ function getImageMimeType(fileExt = '') {
   return 'image/jpeg';
 }
 
-
 async function callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs }) {
   const imageBase64 = Buffer.from(imageBuffer).toString('base64');
   const scene = String(process.env.TENCENT_OCR_SCENE || '').trim();
@@ -379,16 +397,20 @@ async function callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs }) {
 
   const endpoint = 'https://ocr.tencentcloudapi.com';
   const startedAt = Date.now();
-  logAiDebug('request', {
-    endpoint,
-    provider: 'tencent_ocr',
-    action: 'GeneralHandwritingOCR',
-    region: TENCENT_OCR_REGION,
-    mimeType,
-    imageBytes: imageBuffer.length,
-    base64Length: imageBase64.length,
-    scene: scene || null,
-  }, debugLogs);
+  logAiDebug(
+    'request',
+    {
+      endpoint,
+      provider: 'tencent_ocr',
+      action: 'GeneralHandwritingOCR',
+      region: TENCENT_OCR_REGION,
+      mimeType,
+      imageBytes: imageBuffer.length,
+      base64Length: imageBase64.length,
+      scene: scene || null,
+    },
+    debugLogs,
+  );
 
   const res = await postTencentCloudJson({
     endpoint,
@@ -407,33 +429,38 @@ async function callTencentHandwritingOcr({ imageBuffer, mimeType, debugLogs }) {
   }
 
   const detections = Array.isArray(response && response.TextDetections) ? response.TextDetections : [];
-  const lines = detections
-    .map(item => String(item && item.DetectedText || '').trim())
-    .filter(Boolean);
+  const lines = detections.map((item) => String((item && item.DetectedText) || '').trim()).filter(Boolean);
   const confidenceValues = detections
-    .map(item => Number(item && item.Confidence))
-    .filter(value => Number.isFinite(value));
-  const avgConfidence = confidenceValues.length > 0
-    ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length / 100
-    : (lines.length > 0 ? 0.6 : 0);
+    .map((item) => Number(item && item.Confidence))
+    .filter((value) => Number.isFinite(value));
+  const avgConfidence =
+    confidenceValues.length > 0
+      ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length / 100
+      : lines.length > 0
+        ? 0.6
+        : 0;
 
   const result = {
     subject: '其他',
     batch_date: '',
     raw_text: lines.join('\n'),
-    recognized_items: lines.map(text => ({ subject: '其他', text })),
+    recognized_items: lines.map((text) => ({ subject: '其他', text })),
     confidence: Math.max(0, Math.min(1, Number(avgConfidence.toFixed(3)))),
     provider_message: lines.length > 0 ? 'tencent_general_handwriting_ocr' : 'unclear_image',
   };
 
-  logAiDebug('message', {
-    durationMs: Date.now() - startedAt,
-    requestId: response && response.RequestId,
-    angle: response && response.Angle,
-    lineCount: lines.length,
-    confidence: result.confidence,
-    rawTextPreview: result.raw_text.slice(0, 1000),
-  }, debugLogs);
+  logAiDebug(
+    'message',
+    {
+      durationMs: Date.now() - startedAt,
+      requestId: response && response.RequestId,
+      angle: response && response.Angle,
+      lineCount: lines.length,
+      confidence: result.confidence,
+      rawTextPreview: result.raw_text.slice(0, 1000),
+    },
+    debugLogs,
+  );
   logAiDebug('parsed', result, debugLogs);
   return result;
 }
@@ -454,47 +481,56 @@ function postTencentCloudJson({ endpoint, service, action, version, region, payl
       date,
     });
 
-    const req = https.request({
-      hostname: parsed.hostname,
-      port: parsed.port || 443,
-      path: parsed.pathname || '/',
-      method: 'POST',
-      timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        Host: parsed.hostname,
-        Authorization: authorization,
-        'X-TC-Action': action,
-        'X-TC-Version': version,
-        'X-TC-Timestamp': String(timestamp),
-        'X-TC-Region': region,
+    const req = https.request(
+      {
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: parsed.pathname || '/',
+        method: 'POST',
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          Host: parsed.hostname,
+          Authorization: authorization,
+          'X-TC-Action': action,
+          'X-TC-Version': version,
+          'X-TC-Timestamp': String(timestamp),
+          'X-TC-Region': region,
+        },
       },
-    }, (res) => {
-      let text = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => { text += chunk; });
-      res.on('end', () => {
-        logAiDebug('http_response', {
-          provider: 'tencent_ocr',
-          statusCode: res.statusCode,
-          bodyLength: text.length,
-          bodyPreview: text.slice(0, 3000),
-        }, debugLogs);
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          const error = new Error(`tencent ocr api status ${res.statusCode}: ${text.slice(0, 500)}`);
-          error.statusCode = res.statusCode;
-          error.responseBody = text.slice(0, 3000);
-          reject(error);
-          return;
-        }
-        try {
-          resolve(JSON.parse(text));
-        } catch (err) {
-          reject(err);
-        }
-      });
-    });
+      (res) => {
+        let text = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          text += chunk;
+        });
+        res.on('end', () => {
+          logAiDebug(
+            'http_response',
+            {
+              provider: 'tencent_ocr',
+              statusCode: res.statusCode,
+              bodyLength: text.length,
+              bodyPreview: text.slice(0, 3000),
+            },
+            debugLogs,
+          );
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            const error = new Error(`tencent ocr api status ${res.statusCode}: ${text.slice(0, 500)}`);
+            error.statusCode = res.statusCode;
+            error.responseBody = text.slice(0, 3000);
+            reject(error);
+            return;
+          }
+          try {
+            resolve(JSON.parse(text));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      },
+    );
     req.on('timeout', () => req.destroy(new Error('tencent ocr api timeout')));
     req.on('error', reject);
     req.write(body);
@@ -519,12 +555,7 @@ function buildTencentCloudAuthorization({ secretId, secretKey, service, host, pa
     hashedRequestPayload,
   ].join('\n');
   const credentialScope = `${date}/${service}/tc3_request`;
-  const stringToSign = [
-    algorithm,
-    String(timestamp),
-    credentialScope,
-    sha256Hex(canonicalRequest),
-  ].join('\n');
+  const stringToSign = [algorithm, String(timestamp), credentialScope, sha256Hex(canonicalRequest)].join('\n');
   const secretDate = hmacSha256(Buffer.from(`TC3${secretKey}`, 'utf8'), date);
   const secretService = hmacSha256(secretDate, service);
   const secretSigning = hmacSha256(secretService, 'tc3_request');
@@ -551,16 +582,22 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   const shouldUseTextBase64 = configuredFormat === 'text_base64';
 
   if (!configuredFormat && isDeepSeekOfficialApi) {
-    const err = new Error('当前 DeepSeek API 返回 60万+ prompt_tokens，说明图片 base64 被当成普通文本处理，不是视觉输入；请配置真正支持图片的 OCR/视觉接口，或显式设置 HOMEWORK_AI_IMAGE_FORMAT=openai_image_url 后再测试该接口是否支持图片。');
+    const err = new Error(
+      '当前 DeepSeek API 返回 60万+ prompt_tokens，说明图片 base64 被当成普通文本处理，不是视觉输入；请配置真正支持图片的 OCR/视觉接口，或显式设置 HOMEWORK_AI_IMAGE_FORMAT=openai_image_url 后再测试该接口是否支持图片。',
+    );
     err.code = 'deepseek_text_only_image_payload';
-    logAiDebug('unsupported_image_payload', {
-      endpoint,
-      model: HOMEWORK_AI_MODEL,
-      originalImageBytes: imageBuffer.length,
-      configuredFormat: configuredFormat || null,
-      reason: 'deepseek_official_api_treats_base64_as_text_not_vision_input',
-      nextStep: 'use_real_vision_or_ocr_provider',
-    }, debugLogs);
+    logAiDebug(
+      'unsupported_image_payload',
+      {
+        endpoint,
+        model: HOMEWORK_AI_MODEL,
+        originalImageBytes: imageBuffer.length,
+        configuredFormat: configuredFormat || null,
+        reason: 'deepseek_official_api_treats_base64_as_text_not_vision_input',
+        nextStep: 'use_real_vision_or_ocr_provider',
+      },
+      debugLogs,
+    );
     throw err;
   }
 
@@ -571,7 +608,8 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
   }
 
   const imageBase64 = Buffer.from(modelImageBuffer).toString('base64');
-  const promptText = '请从图片中逐字识别真实作业文字，并返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条真实作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条真实作业内容"}],"confidence":0到1,"provider_message":"可选说明"}。严格要求：1）只能输出图片里确实能看清的文字，不要根据常见作业格式补全、改写或猜测；2）看不清的少量字用[?]标记；3）如果大部分文字无法辨认，raw_text为空字符串、recognized_items为空数组、confidence低于0.3，并在provider_message说明unclear_image；4）如果一张图片里有多个科目，请在recognized_items里分别列出每条作业的科目和内容；5）如果日期无法判断，batch_date为空字符串；如果科目无法判断，subject为其他。';
+  const promptText =
+    '请从图片中逐字识别真实作业文字，并返回 JSON：{"subject":"语文|数学|英语|其他","batch_date":"YYYY-MM-DD或空字符串","raw_text":"每行一条真实作业内容","recognized_items":[{"subject":"语文|数学|英语|其他","text":"一条真实作业内容"}],"confidence":0到1,"provider_message":"可选说明"}。严格要求：1）只能输出图片里确实能看清的文字，不要根据常见作业格式补全、改写或猜测；2）看不清的少量字用[?]标记；3）如果大部分文字无法辨认，raw_text为空字符串、recognized_items为空数组、confidence低于0.3，并在provider_message说明unclear_image；4）如果一张图片里有多个科目，请在recognized_items里分别列出每条作业的科目和内容；5）如果日期无法判断，batch_date为空字符串；如果科目无法判断，subject为其他。';
   const imageInput = buildImageInput({ baseUrl, imageBase64, mimeType: modelMimeType, promptText });
   const startedAt = Date.now();
 
@@ -594,7 +632,8 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
     messages: [
       {
         role: 'system',
-        content: '你是严格的作业图片 OCR 助手。只输出 JSON，不要输出 Markdown。必须逐字识别图片中的真实文字；不要猜测、补全、改写或编造看不清的内容。',
+        content:
+          '你是严格的作业图片 OCR 助手。只输出 JSON，不要输出 Markdown。必须逐字识别图片中的真实文字；不要猜测、补全、改写或编造看不清的内容。',
       },
       {
         role: 'user',
@@ -605,37 +644,44 @@ async function callVisionModel({ imageBuffer, mimeType, debugLogs = [] }) {
     max_tokens: Number(process.env.HOMEWORK_AI_MAX_TOKENS || 2048),
   };
 
-  logAiDebug('request', {
-    endpoint,
-    provider,
-    model: HOMEWORK_AI_MODEL,
-    mimeType: modelMimeType,
-    originalImageBytes: imageBuffer.length,
-    imageBytes: modelImageBuffer.length,
-    base64Length: imageBase64.length,
-    imageCompressed: modelImageBuffer.length !== imageBuffer.length,
-    imageFormat: imageInput.format,
-    messageCount: payload.messages.length,
-    userContentType: Array.isArray(imageInput.content) ? 'array' : typeof imageInput.content,
-    responseFormat: payload.response_format,
-    maxTokens: payload.max_tokens,
-  }, debugLogs);
+  logAiDebug(
+    'request',
+    {
+      endpoint,
+      provider,
+      model: HOMEWORK_AI_MODEL,
+      mimeType: modelMimeType,
+      originalImageBytes: imageBuffer.length,
+      imageBytes: modelImageBuffer.length,
+      base64Length: imageBase64.length,
+      imageCompressed: modelImageBuffer.length !== imageBuffer.length,
+      imageFormat: imageInput.format,
+      messageCount: payload.messages.length,
+      userContentType: Array.isArray(imageInput.content) ? 'array' : typeof imageInput.content,
+      responseFormat: payload.response_format,
+      maxTokens: payload.max_tokens,
+    },
+    debugLogs,
+  );
 
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY, debugLogs);
   const message = res && res.choices && res.choices[0] ? res.choices[0].message : null;
   const content = extractMessageContent(message);
-  logAiDebug('message', {
-    durationMs: Date.now() - startedAt,
-    responseId: res && res.id,
-    finishReason: res && res.choices && res.choices[0] ? res.choices[0].finish_reason : undefined,
-    usage: res && res.usage,
-    contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
-  }, debugLogs);
+  logAiDebug(
+    'message',
+    {
+      durationMs: Date.now() - startedAt,
+      responseId: res && res.id,
+      finishReason: res && res.choices && res.choices[0] ? res.choices[0].finish_reason : undefined,
+      usage: res && res.usage,
+      contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
+    },
+    debugLogs,
+  );
   const parsed = parseModelJson(content);
   logAiDebug('parsed', parsed, debugLogs);
   return parsed;
 }
-
 
 function resolveAiProvider(baseUrl) {
   const provider = HOMEWORK_AI_PROVIDER.replace(/[-_]/g, '').toLowerCase();
@@ -664,11 +710,21 @@ function buildAiEndpoint(baseUrl, provider) {
   return `${baseUrl}/chat/completions`;
 }
 
-async function callAnthropicVisionModel({ endpoint, imageBase64, mimeType, promptText, debugLogs, startedAt, imageBytes, originalImageBytes }) {
+async function callAnthropicVisionModel({
+  endpoint,
+  imageBase64,
+  mimeType,
+  promptText,
+  debugLogs,
+  startedAt,
+  imageBytes,
+  originalImageBytes,
+}) {
   const payload = {
     model: HOMEWORK_AI_MODEL,
     max_tokens: Number(process.env.HOMEWORK_AI_MAX_TOKENS || 2048),
-    system: '你是严格的作业图片 OCR 助手。只输出 JSON，不要输出 Markdown。必须逐字识别图片中的真实文字；不要猜测、补全、改写或编造看不清的内容。',
+    system:
+      '你是严格的作业图片 OCR 助手。只输出 JSON，不要输出 Markdown。必须逐字识别图片中的真实文字；不要猜测、补全、改写或编造看不清的内容。',
     messages: [
       {
         role: 'user',
@@ -688,32 +744,40 @@ async function callAnthropicVisionModel({ endpoint, imageBase64, mimeType, promp
     temperature: 0.1,
   };
 
-  logAiDebug('request', {
-    endpoint,
-    provider: 'anthropic',
-    model: HOMEWORK_AI_MODEL,
-    mimeType,
-    originalImageBytes,
-    imageBytes,
-    base64Length: imageBase64.length,
-    imageFormat: 'anthropic_base64_image',
-    messageCount: payload.messages.length,
-    userContentType: 'array',
-    maxTokens: payload.max_tokens,
-  }, debugLogs);
+  logAiDebug(
+    'request',
+    {
+      endpoint,
+      provider: 'anthropic',
+      model: HOMEWORK_AI_MODEL,
+      mimeType,
+      originalImageBytes,
+      imageBytes,
+      base64Length: imageBase64.length,
+      imageFormat: 'anthropic_base64_image',
+      messageCount: payload.messages.length,
+      userContentType: 'array',
+      maxTokens: payload.max_tokens,
+    },
+    debugLogs,
+  );
 
   const res = await postJson(endpoint, payload, HOMEWORK_AI_API_KEY, debugLogs, {
     Authorization: `Bearer ${HOMEWORK_AI_API_KEY}`,
     'anthropic-version': '2023-06-01',
   });
   const content = extractAnthropicContent(res);
-  logAiDebug('message', {
-    durationMs: Date.now() - startedAt,
-    responseId: res && res.id,
-    stopReason: res && res.stop_reason,
-    usage: res && res.usage,
-    contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
-  }, debugLogs);
+  logAiDebug(
+    'message',
+    {
+      durationMs: Date.now() - startedAt,
+      responseId: res && res.id,
+      stopReason: res && res.stop_reason,
+      usage: res && res.usage,
+      contentPreview: typeof content === 'string' ? content.slice(0, 3000) : content,
+    },
+    debugLogs,
+  );
   const parsed = parseModelJson(content);
   logAiDebug('parsed', parsed, debugLogs);
   return parsed;
@@ -722,18 +786,24 @@ async function callAnthropicVisionModel({ endpoint, imageBase64, mimeType, promp
 async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs }) {
   const maxBytes = Number(process.env.HOMEWORK_AI_TEXT_IMAGE_MAX_BYTES || 700 * 1024);
   if (imageBuffer.length <= maxBytes) {
-    logAiDebug('image_prepare', {
-      skipped: true,
-      reason: 'already_under_limit',
-      originalBytes: imageBuffer.length,
-      maxBytes,
-      sharpAvailable: Boolean(sharp),
-    }, debugLogs);
+    logAiDebug(
+      'image_prepare',
+      {
+        skipped: true,
+        reason: 'already_under_limit',
+        originalBytes: imageBuffer.length,
+        maxBytes,
+        sharpAvailable: Boolean(sharp),
+      },
+      debugLogs,
+    );
     return { imageBuffer, mimeType };
   }
 
   if (!sharp) {
-    const err = new Error(`图片过大：${imageBuffer.length} bytes，当前 DeepSeek 文本接口需要压缩到 ${maxBytes} bytes 以下，但 sharp 未安装`);
+    const err = new Error(
+      `图片过大：${imageBuffer.length} bytes，当前 DeepSeek 文本接口需要压缩到 ${maxBytes} bytes 以下，但 sharp 未安装`,
+    );
     err.code = 'image_too_large_without_sharp';
     throw err;
   }
@@ -756,15 +826,19 @@ async function compressImageForTextPayload({ imageBuffer, mimeType, debugLogs })
       .toBuffer();
 
     bestBuffer = output;
-    logAiDebug('image_prepare', {
-      originalMimeType: mimeType,
-      outputMimeType: 'image/jpeg',
-      originalBytes: imageBuffer.length,
-      outputBytes: output.length,
-      maxBytes,
-      width: attempt.width,
-      quality: attempt.quality,
-    }, debugLogs);
+    logAiDebug(
+      'image_prepare',
+      {
+        originalMimeType: mimeType,
+        outputMimeType: 'image/jpeg',
+        originalBytes: imageBuffer.length,
+        outputBytes: output.length,
+        maxBytes,
+        width: attempt.width,
+        quality: attempt.quality,
+      },
+      debugLogs,
+    );
 
     if (output.length <= maxBytes) {
       return { imageBuffer: output, mimeType: 'image/jpeg' };
@@ -828,7 +902,7 @@ function extractMessageContent(message) {
   if (typeof message.content === 'string') return message.content;
   if (Array.isArray(message.content)) {
     return message.content
-      .map(part => {
+      .map((part) => {
         if (typeof part === 'string') return part;
         if (part && typeof part.text === 'string') return part.text;
         if (part && typeof part.content === 'string') return part.content;
@@ -846,42 +920,51 @@ function postJson(url, payload, apiKey, debugLogs, extraHeaders = null) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const body = JSON.stringify(payload);
-    const req = https.request({
-      hostname: parsed.hostname,
-      port: parsed.port || 443,
-      path: `${parsed.pathname}${parsed.search}`,
-      method: 'POST',
-      timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        Authorization: `Bearer ${apiKey}`,
-        ...(extraHeaders || {}),
+    const req = https.request(
+      {
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: 'POST',
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          Authorization: `Bearer ${apiKey}`,
+          ...(extraHeaders || {}),
+        },
       },
-    }, (res) => {
-      let text = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => { text += chunk; });
-      res.on('end', () => {
-        logAiDebug('http_response', {
-          statusCode: res.statusCode,
-          bodyLength: text.length,
-          bodyPreview: text.slice(0, 3000),
-        }, debugLogs);
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          const error = new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`);
-          error.statusCode = res.statusCode;
-          error.responseBody = text.slice(0, 3000);
-          reject(error);
-          return;
-        }
-        try {
-          resolve(JSON.parse(text));
-        } catch (err) {
-          reject(err);
-        }
-      });
-    });
+      (res) => {
+        let text = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          text += chunk;
+        });
+        res.on('end', () => {
+          logAiDebug(
+            'http_response',
+            {
+              statusCode: res.statusCode,
+              bodyLength: text.length,
+              bodyPreview: text.slice(0, 3000),
+            },
+            debugLogs,
+          );
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            const error = new Error(`model api status ${res.statusCode}: ${text.slice(0, 500)}`);
+            error.statusCode = res.statusCode;
+            error.responseBody = text.slice(0, 3000);
+            reject(error);
+            return;
+          }
+          try {
+            resolve(JSON.parse(text));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      },
+    );
     req.on('timeout', () => req.destroy(new Error('model api timeout')));
     req.on('error', reject);
     req.write(body);
@@ -889,13 +972,12 @@ function postJson(url, payload, apiKey, debugLogs, extraHeaders = null) {
   });
 }
 
-
 function extractAnthropicContent(res) {
   if (!res) return '';
   if (typeof res.content === 'string') return res.content;
   if (Array.isArray(res.content)) {
     return res.content
-      .map(part => {
+      .map((part) => {
         if (typeof part === 'string') return part;
         if (part && typeof part.text === 'string') return part.text;
         if (part && typeof part.content === 'string') return part.content;
@@ -926,7 +1008,7 @@ function normalizeRecognitionResult(result = {}) {
   const batchDate = /^\d{4}-\d{2}-\d{2}$/.test(result.batch_date || '') ? result.batch_date : null;
   const rawLines = String(result.raw_text || '')
     .split(/[\n\r]+/)
-    .map(line => line.trim())
+    .map((line) => line.trim())
     .filter(Boolean);
   const rawText = rawLines.join('\n');
   const recognizedItems = normalizeRecognitionItems(result.recognized_items, rawLines, subject);
@@ -937,7 +1019,8 @@ function normalizeRecognitionResult(result = {}) {
     raw_text: rawText,
     recognized_items: recognizedItems,
     confidence: Number(result.confidence || 0),
-    provider_message: result.provider_message || (recognizedItems.length === 0 ? '未识别到作业内容，请换一张更清晰的图片' : undefined),
+    provider_message:
+      result.provider_message || (recognizedItems.length === 0 ? '未识别到作业内容，请换一张更清晰的图片' : undefined),
   };
 }
 
@@ -945,17 +1028,17 @@ function normalizeRecognitionItems(items, rawLines, fallbackSubject) {
   const allowedSubjects = ['语文', '数学', '英语', '其他'];
   if (Array.isArray(items) && items.length > 0) {
     const normalized = items
-      .map(item => ({
+      .map((item) => ({
         subject: allowedSubjects.includes(item.subject) ? item.subject : fallbackSubject,
         text: String(item.text || '').trim(),
       }))
-      .filter(item => item.text);
+      .filter((item) => item.text);
     if (normalized.length > 0) {
       return normalized;
     }
   }
 
-  return rawLines.map(text => ({ subject: fallbackSubject, text }));
+  return rawLines.map((text) => ({ subject: fallbackSubject, text }));
 }
 
 async function updateHomework(userId, id, data) {
@@ -965,9 +1048,7 @@ async function updateHomework(userId, id, data) {
   if (data.status !== undefined) updateData.status = data.status;
   updateData.updated_at = db.serverDate();
 
-  const res = await db.collection('homework_batches')
-    .where({ _id: id, user_id: userId })
-    .update({ data: updateData });
+  const res = await db.collection('homework_batches').where({ _id: id, user_id: userId }).update({ data: updateData });
 
   if (res.stats.updated === 0) {
     return { code: 404, message: '作业不存在', data: null };
@@ -977,23 +1058,25 @@ async function updateHomework(userId, id, data) {
 }
 
 async function deleteHomework(userId, id) {
-  const batchRes = await db.collection('homework_batches')
-    .where({ _id: id, user_id: userId })
-    .get();
+  const batchRes = await db.collection('homework_batches').where({ _id: id, user_id: userId }).get();
 
   if (batchRes.data.length === 0) {
     return { code: 404, message: '作业不存在', data: null };
   }
 
   const batch = batchRes.data[0];
-  const tasksRes = await db.collection('task_items')
-    .where({ batch_id: id, child_id: batch.child_id })
-    .get();
-  const taskIds = tasksRes.data.map(task => task._id);
+  const tasksRes = await db.collection('task_items').where({ batch_id: id, child_id: batch.child_id }).get();
+  const taskIds = tasksRes.data.map((task) => task._id);
 
   if (taskIds.length > 0) {
-    await db.collection('check_results').where({ task_id: _.in(taskIds) }).remove();
-    await db.collection('task_submissions').where({ task_id: _.in(taskIds), child_id: batch.child_id }).remove();
+    await db
+      .collection('check_results')
+      .where({ task_id: _.in(taskIds) })
+      .remove();
+    await db
+      .collection('task_submissions')
+      .where({ task_id: _.in(taskIds), child_id: batch.child_id })
+      .remove();
     await db.collection('task_items').where({ batch_id: id, child_id: batch.child_id }).remove();
   }
 

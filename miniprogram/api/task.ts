@@ -36,7 +36,10 @@ export const taskApi = {
   get(taskId: string, child_id: string) {
     return callTasks('get', { id: taskId, data: { child_id } });
   },
-  submit(taskId: string, payload: { child_id: string; submit_type: 1 | 2 | 3; submit_text?: string; file_asset_id?: string }) {
+  submit(
+    taskId: string,
+    payload: { child_id: string; submit_type: 1 | 2 | 3; submit_text?: string; file_asset_id?: string },
+  ) {
     return callTasks('submit', { id: taskId, data: payload });
   },
   review(taskId: string, payload: { child_id: string; approved?: boolean; feedback?: string }) {

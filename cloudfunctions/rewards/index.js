@@ -36,26 +36,26 @@ async function getOverview(userId, data) {
   }
 
   // 验证学生归属
-  const childRes = await db.collection('children')
-    .where({ _id: child_id, user_id: userId })
-    .get();
+  const childRes = await db.collection('children').where({ _id: child_id, user_id: userId }).get();
 
   if (childRes.data.length === 0) {
     return { code: 404, message: '学生不存在', data: null };
   }
 
   // 获取积分账户
-  const accountRes = await db.collection('reward_accounts')
-    .where({ child_id })
-    .get();
+  const accountRes = await db.collection('reward_accounts').where({ child_id }).get();
 
-  const account = accountRes.data.length > 0 ? accountRes.data[0] : {
-    total_points: 0,
-    streak_days: 0,
-  };
+  const account =
+    accountRes.data.length > 0
+      ? accountRes.data[0]
+      : {
+          total_points: 0,
+          streak_days: 0,
+        };
 
   // 获取最近的奖励记录
-  const recordsRes = await db.collection('reward_records')
+  const recordsRes = await db
+    .collection('reward_records')
     .where({ child_id })
     .orderBy('created_at', 'desc')
     .limit(50)
@@ -63,15 +63,16 @@ async function getOverview(userId, data) {
 
   // 获取今日完成情况
   const today = getTodayDate();
-  const completionRes = await db.collection('daily_completions')
-    .where({ child_id, completion_date: today })
-    .get();
+  const completionRes = await db.collection('daily_completions').where({ child_id, completion_date: today }).get();
 
-  const todayCompletion = completionRes.data.length > 0 ? completionRes.data[0] : {
-    total_tasks: 0,
-    completed_tasks: 0,
-    is_all_completed: 0,
-  };
+  const todayCompletion =
+    completionRes.data.length > 0
+      ? completionRes.data[0]
+      : {
+          total_tasks: 0,
+          completed_tasks: 0,
+          is_all_completed: 0,
+        };
 
   return {
     code: 0,

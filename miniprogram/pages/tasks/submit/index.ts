@@ -56,7 +56,7 @@ Page({
   },
 
   getStatusText(status: 1 | 2 | 3) {
-    return status === 2 ? '已完成' : (status === 3 ? '已提交，等待家长检查' : '待完成');
+    return status === 2 ? '已完成' : status === 3 ? '已提交，等待家长检查' : '待完成';
   },
 
   onModeChange(e: WechatMiniprogram.BaseEvent) {

@@ -56,15 +56,18 @@ async function getOrCreateUser(openid, profile = {}) {
   const userRes = await db.collection('users').where({ openid }).get();
   if (userRes.data.length > 0) {
     const user = userRes.data[0];
-    await db.collection('users').doc(user._id).update({
-      data: {
-        nickname: profile.nickname || user.nickname || null,
-        avatar_url: profile.avatar_url || user.avatar_url || null,
-        status: 1,
-        api_token: token,
-        updated_at: db.serverDate(),
-      },
-    });
+    await db
+      .collection('users')
+      .doc(user._id)
+      .update({
+        data: {
+          nickname: profile.nickname || user.nickname || null,
+          avatar_url: profile.avatar_url || user.avatar_url || null,
+          status: 1,
+          api_token: token,
+          updated_at: db.serverDate(),
+        },
+      });
     return {
       ...user,
       api_token: token,
@@ -133,14 +136,17 @@ async function setupParentPin(user, pin) {
 
   const salt = crypto.randomBytes(16).toString('hex');
   const parentPinHash = hashPin(value, salt);
-  await db.collection('users').doc(user._id).update({
-    data: {
-      parent_pin_hash: parentPinHash,
-      parent_pin_salt: salt,
-      parent_pin_updated_at: db.serverDate(),
-      updated_at: db.serverDate(),
-    },
-  });
+  await db
+    .collection('users')
+    .doc(user._id)
+    .update({
+      data: {
+        parent_pin_hash: parentPinHash,
+        parent_pin_salt: salt,
+        parent_pin_updated_at: db.serverDate(),
+        updated_at: db.serverDate(),
+      },
+    });
 
   return { code: 0, message: 'ok', data: { authed_until: Date.now() + 30 * 60 * 1000 } };
 }

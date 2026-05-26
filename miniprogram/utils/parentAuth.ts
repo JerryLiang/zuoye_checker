@@ -33,7 +33,7 @@ function getCurrentRoute(): string {
   const route = current.route ? `/${current.route}` : '/pages/parent/home/index';
   const options = current.options || {};
   const query = Object.keys(options)
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(options[key])}`)
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(options[key])}`)
     .join('&');
   return query ? `${route}?${query}` : route;
 }

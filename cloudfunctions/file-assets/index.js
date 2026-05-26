@@ -103,9 +103,7 @@ async function createFileAsset(userId, data) {
     return { code: 400, message: '文件路径与业务参数不匹配', data: null };
   }
 
-  const childRes = await db.collection('children')
-    .where({ _id: child_id, user_id: userId })
-    .get();
+  const childRes = await db.collection('children').where({ _id: child_id, user_id: userId }).get();
 
   if (childRes.data.length === 0) {
     return { code: 404, message: '学生不存在', data: null };

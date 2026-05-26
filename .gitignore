@@ -33,6 +33,7 @@ miniprogram/node_modules/
 miniprogram/.miniprogram_npm/
 project.private.config.json
 miniprogram/project.private.config.json
+miniprogram/env/config.ts
 
 # Cloud functions dependencies
 cloudfunctions/**/node_modules/

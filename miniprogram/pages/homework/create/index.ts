@@ -69,7 +69,7 @@ Page({
 
   updateHomeworkItems(homeworkItems: HomeworkInputItem[]) {
     const rawText = homeworkItems
-      .map(item => item.text.trim())
+      .map((item) => item.text.trim())
       .filter(Boolean)
       .join('\n');
     this.setData({ homeworkItems, rawText });
@@ -116,7 +116,7 @@ Page({
       const tempFiles = imageRes.tempFiles || [];
       if (tempFiles.length === 0) return;
 
-      const oversized = tempFiles.find(file => (file.size || 0) > 10 * 1024 * 1024);
+      const oversized = tempFiles.find((file) => (file.size || 0) > 10 * 1024 * 1024);
       if (oversized) {
         wx.showToast({ title: '单张图片不能超过10M', icon: 'none' });
         return;
@@ -171,14 +171,18 @@ Page({
             subject = this.data.subjects[nextSubjectIndex];
             subjectIndex = nextSubjectIndex;
           }
-          const recognizedItems = this.buildRecognizedItems(recognized.data.recognized_items, recognized.data.raw_text, subject);
+          const recognizedItems = this.buildRecognizedItems(
+            recognized.data.recognized_items,
+            recognized.data.raw_text,
+            subject,
+          );
           allRecognizedItems.push(...recognizedItems);
           batchDate = recognized.data.batch_date || batchDate;
           providerMessage = recognized.data.provider_message || providerMessage;
         }
       }
 
-      const rawText = allRecognizedItems.map(item => item.text).join('\n');
+      const rawText = allRecognizedItems.map((item) => item.text).join('\n');
       this.setData({
         rawText,
         recognizedItems: allRecognizedItems,
@@ -209,7 +213,10 @@ Page({
     recognizedItems[index] = { ...recognizedItems[index], text: e.detail.value };
     this.setData({
       recognizedItems,
-      rawText: recognizedItems.map(item => item.text.trim()).filter(Boolean).join('\n'),
+      rawText: recognizedItems
+        .map((item) => item.text.trim())
+        .filter(Boolean)
+        .join('\n'),
     });
   },
 
@@ -267,15 +274,18 @@ Page({
       ctx.clearRect(0, 0, width, height);
       ctx.drawImage(filePath, 0, 0, width, height);
       ctx.draw(false, () => {
-        wx.canvasToTempFilePath({
-          canvasId: 'compressCanvas',
-          destWidth: width,
-          destHeight: height,
-          fileType: 'jpg',
-          quality,
-          success: res => resolve(res.tempFilePath),
-          fail: reject,
-        }, this);
+        wx.canvasToTempFilePath(
+          {
+            canvasId: 'compressCanvas',
+            destWidth: width,
+            destHeight: height,
+            fileType: 'jpg',
+            quality,
+            success: (res) => resolve(res.tempFilePath),
+            fail: reject,
+          },
+          this,
+        );
       });
     });
   },
@@ -283,18 +293,18 @@ Page({
   buildRecognizedItems(items?: HomeworkInputItem[], rawText = '', fallbackSubject?: string) {
     if (Array.isArray(items) && items.length > 0) {
       return items
-        .map(item => ({
+        .map((item) => ({
           subject: this.normalizeSubject(item.subject || fallbackSubject),
           text: String(item.text || '').trim(),
         }))
-        .filter(item => item.text);
+        .filter((item) => item.text);
     }
 
     return String(rawText || '')
       .split(/[\n\r]+/)
-      .map(line => line.trim())
+      .map((line) => line.trim())
       .filter(Boolean)
-      .map(text => ({ subject: fallbackSubject, text }));
+      .map((text) => ({ subject: fallbackSubject, text }));
   },
 
   normalizeSubject(subject = '其他') {
@@ -302,16 +312,17 @@ Page({
   },
 
   getSubmitItems() {
-    const sourceItems = this.data.inputMode === 'photo'
-      ? this.data.recognizedItems
-      : this.data.homeworkItems.map(item => ({ subject: this.data.subject, text: item.text }));
+    const sourceItems =
+      this.data.inputMode === 'photo'
+        ? this.data.recognizedItems
+        : this.data.homeworkItems.map((item) => ({ subject: this.data.subject, text: item.text }));
 
     return sourceItems
-      .map(item => ({
+      .map((item) => ({
         subject: this.normalizeSubject(item.subject || this.data.subject),
         text: String(item.text || '').trim(),
       }))
-      .filter(item => item.text);
+      .filter((item) => item.text);
   },
 
   async onSubmit() {
@@ -328,7 +339,10 @@ Page({
 
     const submitItems = this.getSubmitItems();
     if (submitItems.length === 0) {
-      wx.showToast({ title: this.data.inputMode === 'photo' ? '请先上传图片并点击识别' : '请输入作业内容', icon: 'none' });
+      wx.showToast({
+        title: this.data.inputMode === 'photo' ? '请先上传图片并点击识别' : '请输入作业内容',
+        icon: 'none',
+      });
       return;
     }
 
@@ -339,13 +353,13 @@ Page({
 
     try {
       this.setData({ submitting: true });
-      const subjects = submitItems.map(item => item.subject).filter(Boolean);
+      const subjects = submitItems.map((item) => item.subject).filter(Boolean);
       const uniqueSubjects = subjects.filter((subject, index) => subjects.indexOf(subject) === index);
       await homeworkApi.create({
         child_id: app.globalData.currentChildId,
         subject: uniqueSubjects.length === 1 ? uniqueSubjects[0] : '其他',
         input_source: this.data.inputMode === 'photo' ? 2 : 1,
-        raw_text: submitItems.map(item => item.text).join('\n'),
+        raw_text: submitItems.map((item) => item.text).join('\n'),
         task_items: submitItems,
         batch_date: this.data.batchDate,
         file_asset_id: this.data.fileAssetIds[0] || undefined,

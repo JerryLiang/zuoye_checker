@@ -122,7 +122,7 @@ Page({
     app.globalData.currentChildId = childId;
     wx.setStorageSync('currentChildId', childId);
 
-    const currentChild = this.data.children.find(c => c._id === childId) || null;
+    const currentChild = this.data.children.find((c) => c._id === childId) || null;
     this.setData({ currentChildId: childId, currentChild });
     this.loadTodayTasks();
   },

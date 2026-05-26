@@ -44,7 +44,7 @@ Page({
       const res = await homeworkApi.list(childId);
       const batches = (res.data || []).map((item: HomeworkBatch) => {
         const total = item.total_tasks ?? item.tasks?.length ?? 0;
-        const completed = item.completed_tasks ?? item.tasks?.filter(task => task.status === 2).length ?? 0;
+        const completed = item.completed_tasks ?? item.tasks?.filter((task) => task.status === 2).length ?? 0;
         const progressPctValue = total > 0 ? Math.round((completed / total) * 100) : 0;
         return {
           ...item,

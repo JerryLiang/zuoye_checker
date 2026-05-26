@@ -14,14 +14,7 @@ exports.main = async (event, context) => {
   }
 
   try {
-    await ensureCollections([
-      'users',
-      'children',
-      'homework_batches',
-      'task_items',
-      'check_results',
-      'reward_records',
-    ]);
+    await ensureCollections(['users', 'children', 'homework_batches', 'task_items', 'check_results', 'reward_records']);
 
     const user = await getOrCreateUser(openid);
 
@@ -86,9 +79,7 @@ async function getWeeklyReport(userId, data) {
     return { code: 400, message: '缺少child_id', data: null };
   }
 
-  const childRes = await db.collection('children')
-    .where({ _id: child_id, user_id: userId })
-    .get();
+  const childRes = await db.collection('children').where({ _id: child_id, user_id: userId }).get();
 
   if (childRes.data.length === 0) {
     return { code: 404, message: '学生不存在', data: null };
@@ -113,12 +104,13 @@ async function getWeeklyReport(userId, data) {
     };
   });
 
-  const batchRes = await db.collection('homework_batches')
+  const batchRes = await db
+    .collection('homework_batches')
     .where({ user_id: userId, child_id, batch_date: _.gte(weekStart).and(_.lte(weekEnd)) })
     .get();
   const batches = batchRes.data || [];
   const batchDateMap = {};
-  batches.forEach(batch => {
+  batches.forEach((batch) => {
     if (dateSet.has(batch.batch_date)) {
       batchDateMap[batch._id] = batch.batch_date;
     }
@@ -127,14 +119,15 @@ async function getWeeklyReport(userId, data) {
   const batchIds = Object.keys(batchDateMap);
   let tasks = [];
   if (batchIds.length > 0) {
-    const taskRes = await db.collection('task_items')
+    const taskRes = await db
+      .collection('task_items')
       .where({ child_id, batch_id: _.in(batchIds) })
       .get();
     tasks = taskRes.data || [];
   }
 
   const taskDateMap = {};
-  tasks.forEach(task => {
+  tasks.forEach((task) => {
     const dateStr = batchDateMap[task.batch_id];
     if (!dateStr || !dailyMap[dateStr]) return;
     taskDateMap[task._id] = dateStr;
@@ -146,10 +139,11 @@ async function getWeeklyReport(userId, data) {
 
   const taskIds = Object.keys(taskDateMap);
   if (taskIds.length > 0) {
-    const checkRes = await db.collection('check_results')
+    const checkRes = await db
+      .collection('check_results')
       .where({ task_id: _.in(taskIds) })
       .get();
-    (checkRes.data || []).forEach(check => {
+    (checkRes.data || []).forEach((check) => {
       if (!check.checked_at) return;
       const dateStr = taskDateMap[check.task_id];
       if (!dateStr || !dailyMap[dateStr]) return;
@@ -159,7 +153,8 @@ async function getWeeklyReport(userId, data) {
     });
   }
 
-  const rewardRes = await db.collection('reward_records')
+  const rewardRes = await db
+    .collection('reward_records')
     .where({
       child_id,
       created_at: _.gte(dateStart(weekStart)).and(_.lt(dateEndExclusive(weekEnd))),
@@ -169,7 +164,7 @@ async function getWeeklyReport(userId, data) {
   let totalPoints = 0;
   let totalScore = 0;
   let scoreCount = 0;
-  (rewardRes.data || []).forEach(record => {
+  (rewardRes.data || []).forEach((record) => {
     const points = Number(record.points || 0);
     totalPoints += points;
     const dateStr = formatDate(new Date(record.created_at));
@@ -178,7 +173,7 @@ async function getWeeklyReport(userId, data) {
     }
   });
 
-  const dailyStats = weekDates.map(dateStr => {
+  const dailyStats = weekDates.map((dateStr) => {
     const day = dailyMap[dateStr];
     totalScore += day._scoreTotal;
     scoreCount += day._scoreCount;

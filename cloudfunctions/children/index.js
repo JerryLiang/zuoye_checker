@@ -82,18 +82,13 @@ async function getOrCreateUser(openid) {
 }
 
 async function listChildren(userId) {
-  const res = await db.collection('children')
-    .where({ user_id: userId })
-    .orderBy('_id', 'desc')
-    .get();
+  const res = await db.collection('children').where({ user_id: userId }).orderBy('_id', 'desc').get();
 
   return { code: 0, message: 'ok', data: res.data };
 }
 
 async function getChild(userId, id) {
-  const res = await db.collection('children')
-    .where({ _id: id, user_id: userId })
-    .get();
+  const res = await db.collection('children').where({ _id: id, user_id: userId }).get();
 
   if (res.data.length === 0) {
     return { code: 404, message: '学生不存在', data: null };
@@ -133,9 +128,7 @@ async function updateChild(userId, id, data) {
   if (data.grade !== undefined) updateData.grade = data.grade;
   updateData.updated_at = db.serverDate();
 
-  const res = await db.collection('children')
-    .where({ _id: id, user_id: userId })
-    .update({ data: updateData });
+  const res = await db.collection('children').where({ _id: id, user_id: userId }).update({ data: updateData });
 
   if (res.stats.updated === 0) {
     return { code: 404, message: '学生不存在', data: null };
@@ -145,9 +138,7 @@ async function updateChild(userId, id, data) {
 }
 
 async function deleteChild(userId, id) {
-  const res = await db.collection('children')
-    .where({ _id: id, user_id: userId })
-    .remove();
+  const res = await db.collection('children').where({ _id: id, user_id: userId }).remove();
 
   if (res.stats.removed === 0) {
     return { code: 404, message: '学生不存在', data: null };

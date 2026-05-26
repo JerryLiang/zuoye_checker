@@ -24,7 +24,11 @@ export const http = {
     const [resource, action] = path.split('/').filter(Boolean);
     const funcName = resource as string;
     const actionName = action || 'list';
-    return callCloud<T>(funcName, { action: actionName, data, id: action && !isNaN(Number(action)) ? action : undefined });
+    return callCloud<T>(funcName, {
+      action: actionName,
+      data,
+      id: action && !isNaN(Number(action)) ? action : undefined,
+    });
   },
 
   post: <T = any>(path: string, data?: Record<string, any>) => {

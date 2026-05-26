@@ -27,7 +27,11 @@ Page({
   },
 
   onPinInput(e: WechatMiniprogram.Input) {
-    this.setData({ pin: String(e.detail.value || '').replace(/\D/g, '').slice(0, 6) });
+    this.setData({
+      pin: String(e.detail.value || '')
+        .replace(/\D/g, '')
+        .slice(0, 6),
+    });
   },
 
   async onSubmit() {
@@ -39,9 +43,7 @@ Page({
 
     try {
       this.setData({ loading: true });
-      const res = this.data.hasPin
-        ? await authApi.verifyParentPin(pin)
-        : await authApi.setupParentPin(pin);
+      const res = this.data.hasPin ? await authApi.verifyParentPin(pin) : await authApi.setupParentPin(pin);
       setParentAuthed(res.data?.authed_until);
       wx.setStorageSync('activeRole', 'parent');
       wx.showToast({ title: this.data.hasPin ? '认证成功' : '设置成功', icon: 'success' });
@@ -55,7 +57,12 @@ Page({
 
   redirectAfterAuth() {
     const redirect = this.data.redirect || '/pages/parent/home/index';
-    if (redirect.startsWith('/pages/index/') || redirect.startsWith('/pages/tasks/') || redirect.startsWith('/pages/reward/') || redirect.startsWith('/pages/profile/')) {
+    if (
+      redirect.startsWith('/pages/index/') ||
+      redirect.startsWith('/pages/tasks/') ||
+      redirect.startsWith('/pages/reward/') ||
+      redirect.startsWith('/pages/profile/')
+    ) {
       wx.switchTab({ url: redirect.split('?')[0] });
       return;
     }

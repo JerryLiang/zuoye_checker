@@ -24,7 +24,9 @@ Page({
       const childRes = await childApi.list();
       const children = childRes.data || [];
       const savedId = app.globalData.currentChildId;
-      const currentChildId = children.some((item: ChildItem) => item._id === savedId) ? savedId : (children[0]?._id || '');
+      const currentChildId = children.some((item: ChildItem) => item._id === savedId)
+        ? savedId
+        : children[0]?._id || '';
       const currentChild = children.find((item: ChildItem) => item._id === currentChildId) || null;
       app.globalData.currentChildId = currentChildId;
       if (currentChildId) wx.setStorageSync('currentChildId', currentChildId);
@@ -60,7 +62,7 @@ Page({
     const app = getApp<IAppOption>();
     app.globalData.currentChildId = childId;
     wx.setStorageSync('currentChildId', childId);
-    const currentChild = this.data.children.find(item => item._id === childId) || null;
+    const currentChild = this.data.children.find((item) => item._id === childId) || null;
     this.setData({ currentChildId: childId, currentChild });
     this.loadTodayTasks(childId);
   },

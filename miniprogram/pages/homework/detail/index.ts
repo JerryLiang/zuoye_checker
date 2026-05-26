@@ -19,7 +19,9 @@ Page({
 
   onLoad(options: Record<string, string>) {
     const canManage = options.role === 'parent';
-    const redirect = options.id ? `/pages/homework/detail/index?id=${options.id}&role=parent` : '/pages/parent/home/index';
+    const redirect = options.id
+      ? `/pages/homework/detail/index?id=${options.id}&role=parent`
+      : '/pages/parent/home/index';
     if (canManage && !requireParentAuth(redirect)) return;
     if (options.id) {
       this.setData({ batchId: options.id, canManage });
@@ -42,7 +44,7 @@ Page({
       const subjectGroups = this.buildSubjectGroups(tasks);
       const doneCount = tasks.filter((t: TaskInBatch) => t.status === 2).length;
       const totalCount = tasks.length;
-      const progressPct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
+      const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
       this.setData({ batch, tasks, subjectGroups, doneCount, totalCount, progressPct });
     } catch (_e) {
       wx.showToast({ title: '加载失败', icon: 'none' });
@@ -61,9 +63,9 @@ Page({
 
   buildSubjectGroups(tasks: TaskInBatch[]): TaskSubjectGroup[] {
     const groups: TaskSubjectGroup[] = [];
-    tasks.forEach(task => {
+    tasks.forEach((task) => {
       const subject = task.subject || '其他';
-      let group = groups.find(item => item.subject === subject);
+      let group = groups.find((item) => item.subject === subject);
       if (!group) {
         group = { subject, tasks: [] };
         groups.push(group);
@@ -116,7 +118,9 @@ Page({
   },
 
   async onDeleteBatch() {
-    const redirect = this.data.batchId ? `/pages/homework/detail/index?id=${this.data.batchId}&role=parent` : '/pages/parent/home/index';
+    const redirect = this.data.batchId
+      ? `/pages/homework/detail/index?id=${this.data.batchId}&role=parent`
+      : '/pages/parent/home/index';
     if (!requireParentAuth(redirect)) return;
 
     const res = await wx.showModal({
