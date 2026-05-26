@@ -60,7 +60,17 @@
   },
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      { "type": "folder", "value": "node_modules" },
+      { "type": "folder", "value": ".github" },
+      { "type": "file", "value": ".prettierrc" },
+      { "type": "file", "value": ".prettierignore" },
+      { "type": "file", "value": "eslint.config.mjs" },
+      { "type": "file", "value": "jest.config.js" },
+      { "type": "file", "value": "package.json" },
+      { "type": "file", "value": "package-lock.json" },
+      { "type": "file", "value": "README.md" }
+    ],
     "include": []
   },
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/"
