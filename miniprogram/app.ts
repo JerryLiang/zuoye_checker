@@ -30,16 +30,19 @@ App<IAppOption>({
   },
 
   async ensureLogin() {
-    if (this.globalData.userId && this.globalData.token) {
-      return;
-    }
-
     try {
       const loginRes = await authApi.wechatLogin({ nickname: '家长用户' });
+      const newUserId = loginRes.data.user.id;
+
+      if (this.globalData.userId && this.globalData.userId !== newUserId) {
+        wx.removeStorageSync('currentChildId');
+        this.globalData.currentChildId = '';
+      }
+
       this.globalData.token = loginRes.data.token;
-      this.globalData.userId = loginRes.data.user.id;
+      this.globalData.userId = newUserId;
       wx.setStorageSync('token', loginRes.data.token);
-      wx.setStorageSync('userId', loginRes.data.user.id);
+      wx.setStorageSync('userId', newUserId);
     } catch (err) {
       console.error('自动登录失败', err);
     }
