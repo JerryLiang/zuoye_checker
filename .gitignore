@@ -2,6 +2,9 @@
 .DS_Store
 Thumbs.db
 
+# Dependencies
+node_modules/
+
 # IDE
 .idea/
 .vscode/
@@ -42,3 +45,7 @@ cloudfunctions/**/.env.*
 
 # Database (dev only)
 backend/database/database.sqlite
+
+# Tooling
+coverage/
+.kilo/
