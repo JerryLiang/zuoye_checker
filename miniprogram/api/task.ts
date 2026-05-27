@@ -8,6 +8,7 @@ export interface TaskItem {
     submit_type: 1 | 2 | 3;
     submit_text?: string;
     file_asset_id?: string;
+    file_asset?: TaskFileAsset | null;
     submitted_at: string;
     check_result?: {
       is_passed: boolean;
@@ -15,6 +16,15 @@ export interface TaskItem {
       feedback: string;
     };
   };
+}
+
+export interface TaskFileAsset {
+  _id: string;
+  fileID: string;
+  file_name?: string | null;
+  file_ext?: string | null;
+  file_size?: number | null;
+  biz_type?: string;
 }
 
 async function callTasks(action: string, data: any = {}) {

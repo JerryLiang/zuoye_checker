@@ -9,6 +9,7 @@ Page({
     currentChildId: '',
     currentChild: null as ChildItem | null,
     todayTotal: 0,
+    todaySubmitted: 0,
     todayDone: 0,
   },
 
@@ -42,18 +43,20 @@ Page({
 
   async loadTodayTasks(childId: string) {
     if (!childId) {
-      this.setData({ todayTotal: 0, todayDone: 0 });
+      this.setData({ todayTotal: 0, todaySubmitted: 0, todayDone: 0 });
       return;
     }
     try {
       const res = await taskApi.today(childId);
       const tasks = res.data || [];
+      const submitted = tasks.filter((item: TaskItem) => item.status === 3).length;
       this.setData({
         todayTotal: tasks.length,
+        todaySubmitted: submitted,
         todayDone: tasks.filter((item: TaskItem) => item.status === 2).length,
       });
     } catch (_e) {
-      this.setData({ todayTotal: 0, todayDone: 0 });
+      this.setData({ todayTotal: 0, todaySubmitted: 0, todayDone: 0 });
     }
   },
 

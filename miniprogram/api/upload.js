@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadApi = exports.MAX_UPLOAD_IMAGE_BYTES = void 0;
-const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf', 'mp3', 'm4a', 'aac', 'wav'];
 exports.MAX_UPLOAD_IMAGE_BYTES = 10 * 1024 * 1024;
 exports.uploadApi = {
     async upload(filePath, bizType, childId) {

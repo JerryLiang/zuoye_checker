@@ -29,6 +29,10 @@
           <view class="overview-number">{{todayTotal}}</view>
           <view class="overview-label">任务总数</view>
         </view>
+        <view class="overview-item tappable" bindtap="goTodayTasks">
+          <view class="overview-number submitted">{{todaySubmitted}}</view>
+          <view class="overview-label">已提交</view>
+        </view>
         <view class="overview-item">
           <view class="overview-number done">{{todayDone}}</view>
           <view class="overview-label">已完成</view>

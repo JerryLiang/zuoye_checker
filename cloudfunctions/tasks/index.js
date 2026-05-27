@@ -320,6 +320,14 @@ async function attachLatestSubmission(task, childId) {
   if (submissionRes.data.length === 0) return task;
 
   task.submission = submissionRes.data[0];
+  if (task.submission.file_asset_id) {
+    const assetRes = await db
+      .collection('file_assets')
+      .where({ _id: task.submission.file_asset_id, child_id: childId })
+      .limit(1)
+      .get();
+    task.submission.file_asset = assetRes.data.length > 0 ? assetRes.data[0] : null;
+  }
   const checkRes = await db
     .collection('check_results')
     .where({ submission_id: task.submission._id, task_id: task._id })

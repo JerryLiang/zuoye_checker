@@ -18,6 +18,14 @@ Page({
         statusText: '',
         canApprove: false,
         approving: false,
+        attachmentFileID: '',
+        attachmentName: '',
+        attachmentExt: '',
+        attachmentSizeText: '',
+        attachmentIsImage: false,
+        attachmentIsAudio: false,
+        attachmentIsPdf: false,
+        playingAudio: false,
     },
     async onLoad(query) {
         const role = query.role === 'parent' ? 'parent' : 'child';
@@ -35,6 +43,8 @@ Page({
             const res = await task_1.taskApi.get(this.data.taskId, childId);
             const task = res.data;
             const submission = task.submission;
+            const fileAsset = submission?.file_asset || null;
+            const attachmentExt = String(fileAsset?.file_ext || '').toLowerCase();
             const nextMode = submission?.file_asset_id ? 'photo' : 'text';
             const nextReadOnly = this.data.readOnly || task.status === 2;
             const canApprove = this.data.role === 'parent' && task.status === 3;
@@ -46,6 +56,13 @@ Page({
                 text: submission?.submit_text || '',
                 submitMode: nextMode,
                 fileAssetId: submission?.file_asset_id || '',
+                attachmentFileID: fileAsset?.fileID || '',
+                attachmentName: fileAsset?.file_name || (attachmentExt ? `提交附件.${attachmentExt}` : '提交附件'),
+                attachmentExt,
+                attachmentSizeText: this.formatFileSize(fileAsset?.file_size || 0),
+                attachmentIsImage: ['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(attachmentExt),
+                attachmentIsAudio: ['mp3', 'm4a', 'aac', 'wav'].includes(attachmentExt),
+                attachmentIsPdf: attachmentExt === 'pdf',
             });
         }
         catch (e) {
@@ -57,6 +74,69 @@ Page({
     },
     getStatusText(status) {
         return status === 2 ? '已完成' : status === 3 ? '已提交，等待家长检查' : '待完成';
+    },
+    formatFileSize(size) {
+        if (!size)
+            return '';
+        if (size < 1024)
+            return `${size}B`;
+        if (size < 1024 * 1024)
+            return `${(size / 1024).toFixed(1)}KB`;
+        return `${(size / 1024 / 1024).toFixed(1)}MB`;
+    },
+    async getAttachmentTempUrl() {
+        if (!this.data.attachmentFileID)
+            return '';
+        const res = await wx.cloud.getTempFileURL({ fileList: [this.data.attachmentFileID] });
+        return res.fileList[0]?.tempFileURL || '';
+    },
+    async onPreviewAttachment() {
+        if (!this.data.attachmentFileID)
+            return;
+        try {
+            if (this.data.attachmentIsImage) {
+                const url = await this.getAttachmentTempUrl();
+                if (!url)
+                    throw new Error('获取图片地址失败');
+                wx.previewImage({ urls: [url], current: url });
+                return;
+            }
+            const downloadRes = await wx.cloud.downloadFile({ fileID: this.data.attachmentFileID });
+            if (this.data.attachmentIsAudio) {
+                const audio = wx.createInnerAudioContext();
+                audio.src = downloadRes.tempFilePath;
+                audio.onEnded(() => this.setData({ playingAudio: false }));
+                audio.onError(() => this.setData({ playingAudio: false }));
+                this.setData({ playingAudio: true });
+                audio.play();
+                return;
+            }
+            wx.openDocument({ filePath: downloadRes.tempFilePath, showMenu: true });
+        }
+        catch (e) {
+            wx.showToast({ title: e instanceof Error ? e.message : '预览失败', icon: 'none' });
+        }
+    },
+    async onDownloadAttachment() {
+        if (!this.data.attachmentFileID)
+            return;
+        try {
+            wx.showLoading({ title: '下载中' });
+            const downloadRes = await wx.cloud.downloadFile({ fileID: this.data.attachmentFileID });
+            if (this.data.attachmentIsImage) {
+                await wx.saveImageToPhotosAlbum({ filePath: downloadRes.tempFilePath });
+                wx.showToast({ title: '已保存到相册', icon: 'success' });
+                return;
+            }
+            const saveRes = await wx.saveFile({ tempFilePath: downloadRes.tempFilePath });
+            wx.showModal({ title: '已下载', content: `文件已保存到本机：${saveRes.savedFilePath}`, showCancel: false });
+        }
+        catch (e) {
+            wx.showToast({ title: e instanceof Error ? e.message : '下载失败', icon: 'none' });
+        }
+        finally {
+            wx.hideLoading();
+        }
     },
     onModeChange(e) {
         if (this.data.readOnly)

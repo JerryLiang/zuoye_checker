@@ -12,6 +12,7 @@ describe('tasks', () => {
       homeworkBatches: [],
       taskSubmissions: [],
       checkResults: [],
+      fileAssets: [],
       rewardAccounts: [],
       rewardRecords: [],
       dailyCompletions: [],
@@ -28,6 +29,7 @@ describe('tasks', () => {
         homework_batches: cfg.homeworkBatches,
         task_submissions: cfg.taskSubmissions,
         check_results: cfg.checkResults,
+        file_assets: cfg.fileAssets,
         reward_accounts: cfg.rewardAccounts,
         reward_records: cfg.rewardRecords,
         daily_completions: cfg.dailyCompletions,
@@ -145,6 +147,24 @@ describe('tasks', () => {
     const result = await main({ action: 'get', id: 'task1', data: {} }, {});
     expect(result.code).toBe(400);
     expect(result.message).toContain('child_id');
+  });
+
+  test('get attaches latest submission file asset', async () => {
+    mockWxConfig.users = [{ _id: 'u1', openid: 'test_openid' }];
+    mockWxConfig.children = [{ _id: 'c1', user_id: 'u1' }];
+    mockWxConfig.homeworkBatches = [{ _id: 'b1', user_id: 'u1', child_id: 'c1' }];
+    mockWxConfig.taskItems = [{ _id: 't1', child_id: 'c1', batch_id: 'b1', status: 3 }];
+    mockWxConfig.taskSubmissions = [
+      { _id: 's1', task_id: 't1', child_id: 'c1', file_asset_id: 'fa1', submit_type: 2, submitted_at: '2026-01-01' },
+    ];
+    mockWxConfig.fileAssets = [
+      { _id: 'fa1', child_id: 'c1', fileID: 'cloud://env/uploads/task_submission/c1/1.jpg', file_ext: 'jpg' },
+    ];
+    setupMock();
+    const { main } = require('../index');
+    const result = await main({ action: 'get', id: 't1', data: { child_id: 'c1' } }, {});
+    expect(result.code).toBe(0);
+    expect(result.data.submission.file_asset.fileID).toContain('task_submission');
   });
 
   test('delete returns 400 when child_id missing', async () => {

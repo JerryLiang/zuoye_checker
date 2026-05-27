@@ -17,7 +17,23 @@
       <view class="mode-tab {{submitMode === 'photo' ? 'active' : ''}}" data-mode="photo" bindtap="onModeChange">拍照上传</view>
     </view>
 
-    <view class="readonly-label" wx:if="{{readOnly && fileAssetId}}">已上传作业图片</view>
+    <view class="readonly-label" wx:if="{{readOnly && fileAssetId && !attachmentFileID}}">已上传作业附件</view>
+
+    <view class="attachment-card" wx:if="{{attachmentFileID}}">
+      <view class="attachment-title">学生提交附件</view>
+      <view class="attachment-preview" bindtap="onPreviewAttachment">
+        <image wx:if="{{attachmentIsImage}}" class="attachment-image" src="{{attachmentFileID}}" mode="aspectFill"></image>
+        <view wx:else class="attachment-file-icon">{{attachmentIsAudio ? '🎧' : (attachmentIsPdf ? '📄' : '📎')}}</view>
+      </view>
+      <view class="attachment-meta">
+        <view class="attachment-name">{{attachmentName}}</view>
+        <view class="attachment-info">{{attachmentExt ? attachmentExt.toUpperCase() : '文件'}} {{attachmentSizeText}}</view>
+      </view>
+      <view class="attachment-actions">
+        <view class="attachment-btn" bindtap="onPreviewAttachment">{{attachmentIsAudio ? (playingAudio ? '播放中' : '播放') : '放大/查看'}}</view>
+        <view class="attachment-btn secondary" bindtap="onDownloadAttachment">下载/保存</view>
+      </view>
+    </view>
 
     <view class="form-group" wx:if="{{submitMode === 'text' || (readOnly && text)}}">
       <text class="form-label">{{readOnly ? '答案/完成描述' : '答案/完成描述'}}</text>

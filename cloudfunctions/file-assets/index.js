@@ -4,7 +4,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
 const ALLOWED_BIZ_TYPES = ['homework_input', 'task_submission'];
-const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf', 'mp3', 'm4a', 'aac', 'wav'];
 
 exports.main = async (event, context) => {
   const { action, data = {} } = event;
