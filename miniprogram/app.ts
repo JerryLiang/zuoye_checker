@@ -7,6 +7,9 @@ App<IAppOption>({
     userId: '',
     currentChildId: '',
     loginPromise: null as Promise<void> | null,
+    isNewUser: false,
+    nickname: '',
+    avatarUrl: '',
   },
   onLaunch() {
     if (!wx.cloud) {
@@ -41,6 +44,9 @@ App<IAppOption>({
 
       this.globalData.token = loginRes.data.token;
       this.globalData.userId = newUserId;
+      this.globalData.isNewUser = !!loginRes.data.is_new;
+      this.globalData.nickname = loginRes.data.user.nickname || '';
+      this.globalData.avatarUrl = loginRes.data.user.avatar_url || '';
       wx.setStorageSync('token', loginRes.data.token);
       wx.setStorageSync('userId', newUserId);
     } catch (err) {
@@ -55,6 +61,9 @@ interface IAppOption {
     userId: string;
     currentChildId: string;
     loginPromise: Promise<void> | null;
+    isNewUser: boolean;
+    nickname: string;
+    avatarUrl: string;
   };
   ensureLogin(): Promise<void>;
 }

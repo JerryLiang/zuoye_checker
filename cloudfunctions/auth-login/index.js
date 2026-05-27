@@ -21,6 +21,8 @@ exports.main = async (event, context) => {
     switch (action) {
       case 'login':
         return buildLoginResult(user);
+      case 'update_profile':
+        return await updateProfile(user, { nickname, avatar_url });
       case 'parent_status':
         return { code: 0, message: 'ok', data: { has_pin: !!user.parent_pin_hash } };
       case 'setup_parent_pin':
@@ -73,6 +75,7 @@ async function getOrCreateUser(openid, profile = {}) {
       api_token: token,
       nickname: profile.nickname || user.nickname || null,
       avatar_url: profile.avatar_url || user.avatar_url || null,
+      is_new: false,
     };
   }
 
@@ -100,6 +103,7 @@ async function getOrCreateUser(openid, profile = {}) {
     api_token: token,
     parent_pin_hash: null,
     parent_pin_salt: null,
+    is_new: true,
   };
 }
 
@@ -109,12 +113,30 @@ function buildLoginResult(user) {
     message: 'ok',
     data: {
       token: user.api_token,
+      is_new: !!user.is_new,
       user: {
         id: user._id,
         openid: user.openid,
         nickname: user.nickname,
         avatar_url: user.avatar_url,
       },
+    },
+  };
+}
+
+async function updateProfile(user, profile) {
+  const updateData = { updated_at: db.serverDate() };
+  if (profile.nickname !== undefined) updateData.nickname = profile.nickname;
+  if (profile.avatar_url !== undefined) updateData.avatar_url = profile.avatar_url;
+
+  await db.collection('users').doc(user._id).update({ data: updateData });
+
+  return {
+    code: 0,
+    message: 'ok',
+    data: {
+      nickname: updateData.nickname || user.nickname,
+      avatar_url: updateData.avatar_url || user.avatar_url,
     },
   };
 }

@@ -28,7 +28,11 @@ export const authApi = {
     });
 
     const result = res.result as
-      | { code: number; message: string; data: { token: string; user: { id: string } } }
+      | {
+          code: number;
+          message: string;
+          data: { token: string; is_new: boolean; user: { id: string; nickname: string; avatar_url: string } };
+        }
       | undefined;
     if (!result) {
       throw new Error('登录云函数无返回');
@@ -37,6 +41,10 @@ export const authApi = {
       throw new Error(result.message || '登录失败');
     }
     return result;
+  },
+
+  async updateProfile(nickname: string, avatar_url: string) {
+    return callAuth('update_profile', { nickname, avatar_url });
   },
 
   async parentStatus() {

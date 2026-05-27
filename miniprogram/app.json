@@ -5,6 +5,7 @@
     "pages/tasks/today/index",
     "pages/reward/index/index",
     "pages/profile/index",
+    "pages/profile/setup/index",
     "pages/parent/auth/index",
     "pages/parent/home/index",
     "pages/homework/create/index",

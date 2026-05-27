@@ -13,6 +13,9 @@ App({
     userId: '',
     currentChildId: '',
     loginPromise: null,
+    isNewUser: false,
+    nickname: '',
+    avatarUrl: '',
   },
   onLaunch() {
     if (!wx.cloud) {
@@ -41,6 +44,9 @@ App({
       }
       this.globalData.token = loginRes.data.token;
       this.globalData.userId = newUserId;
+      this.globalData.isNewUser = !!loginRes.data.is_new;
+      this.globalData.nickname = loginRes.data.user.nickname || '';
+      this.globalData.avatarUrl = loginRes.data.user.avatar_url || '';
       wx.setStorageSync('token', loginRes.data.token);
       wx.setStorageSync('userId', newUserId);
     } catch (err) {
