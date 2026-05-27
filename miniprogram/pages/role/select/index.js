@@ -1,4 +1,6 @@
 'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const parentAuth_1 = require('../../../utils/parentAuth');
 Page({
   async onLoad() {
     const app = getApp();
@@ -13,6 +15,10 @@ Page({
   },
   goParent() {
     wx.setStorageSync('activeRole', 'parent');
-    wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/parent/home/index' });
+    if ((0, parentAuth_1.isParentAuthed)()) {
+      wx.navigateTo({ url: '/pages/parent/home/index' });
+    } else {
+      wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/parent/home/index' });
+    }
   },
 });

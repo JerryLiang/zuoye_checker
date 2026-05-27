@@ -11,6 +11,10 @@ Page({
   },
   async onLoad(options) {
     this.setData({ redirect: options.redirect ? decodeURIComponent(options.redirect) : '/pages/parent/home/index' });
+    if ((0, parentAuth_1.isParentAuthed)()) {
+      this.redirectAfterAuth();
+      return;
+    }
     await this.loadStatus();
   },
   async loadStatus() {

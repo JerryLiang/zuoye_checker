@@ -1,3 +1,5 @@
+import { isParentAuthed } from '../../../utils/parentAuth';
+
 Page({
   async onLoad() {
     const app = getApp<IAppOption>();
@@ -14,7 +16,11 @@ Page({
 
   goParent() {
     wx.setStorageSync('activeRole', 'parent');
-    wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/parent/home/index' });
+    if (isParentAuthed()) {
+      wx.navigateTo({ url: '/pages/parent/home/index' });
+    } else {
+      wx.navigateTo({ url: '/pages/parent/auth/index?redirect=/pages/parent/home/index' });
+    }
   },
 });
 

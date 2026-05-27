@@ -1,5 +1,5 @@
 import { authApi } from '../../../api/auth';
-import { setParentAuthed } from '../../../utils/parentAuth';
+import { isParentAuthed, setParentAuthed } from '../../../utils/parentAuth';
 
 Page({
   data: {
@@ -11,6 +11,12 @@ Page({
 
   async onLoad(options: { redirect?: string }) {
     this.setData({ redirect: options.redirect ? decodeURIComponent(options.redirect) : '/pages/parent/home/index' });
+
+    if (isParentAuthed()) {
+      this.redirectAfterAuth();
+      return;
+    }
+
     await this.loadStatus();
   },
 
