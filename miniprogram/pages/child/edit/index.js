@@ -80,14 +80,10 @@ Page({
                 const app = getApp();
                 app.globalData.currentChildId = childId;
                 wx.setStorageSync('currentChildId', childId);
+                wx.setStorageSync('activeRole', 'parent');
                 wx.showToast({ title: '添加成功', icon: 'success' });
                 setTimeout(() => {
-                    if (this.data.isOnboarding) {
-                        wx.switchTab({ url: '/pages/index/index' });
-                    }
-                    else {
-                        wx.navigateBack();
-                    }
+                    wx.redirectTo({ url: '/pages/parent/home/index?refresh=1' });
                 }, 500);
             }
         }
