@@ -1,39 +1,25 @@
 export interface LoginPayload {
-  code?: string;
   nickname?: string;
   avatar_url?: string;
 }
 
-export const authApi = {
-  async wechatLogin(payload: LoginPayload = {}) {
-    let code = payload.code;
-    if (!code) {
-      const loginRes = await new Promise<{ code: string }>((resolve, reject) => {
-        wx.login({
-          success: resolve,
-          fail: reject,
-        });
-      });
-      code = loginRes.code;
-    }
+export interface LoginResult {
+  code: number;
+  message: string;
+  data: {
+    is_new: boolean;
+    user: { id: string; nickname: string; avatar_url: string };
+  };
+}
 
+export const authApi = {
+  async wechatLogin(): Promise<LoginResult> {
     const res = await wx.cloud.callFunction({
       name: 'auth-login',
-      data: {
-        action: 'login',
-        code,
-        nickname: payload.nickname,
-        avatar_url: payload.avatar_url,
-      },
+      data: { action: 'login' },
     });
 
-    const result = res.result as
-      | {
-          code: number;
-          message: string;
-          data: { token: string; is_new: boolean; user: { id: string; nickname: string; avatar_url: string } };
-        }
-      | undefined;
+    const result = res.result as LoginResult | undefined;
     if (!result) {
       throw new Error('登录云函数无返回');
     }

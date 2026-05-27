@@ -15,6 +15,9 @@ exports.main = async (event, context) => {
     return { code: 401, message: '未登录', data: null };
   }
   const user = userRes.data[0];
+  if ((user.status ?? 1) !== 1) {
+    return { code: 403, message: '账号已停用', data: null };
+  }
 
   try {
     switch (action) {
@@ -32,7 +35,8 @@ exports.main = async (event, context) => {
         return { code: 400, message: '未知操作', data: null };
     }
   } catch (err) {
-    return { code: 500, message: err.message, data: null };
+    console.error('tasks failed', err);
+    return { code: 500, message: '服务暂时不可用', data: null };
   }
 };
 

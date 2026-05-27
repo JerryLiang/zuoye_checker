@@ -17,6 +17,9 @@ exports.main = async (event, context) => {
     await ensureCollections(['users', 'children', 'homework_batches', 'task_items', 'check_results', 'reward_records']);
 
     const user = await getOrCreateUser(openid);
+    if ((user.status ?? 1) !== 1) {
+      return { code: 403, message: '账号已停用', data: null };
+    }
 
     switch (action) {
       case 'weekly':
@@ -25,7 +28,8 @@ exports.main = async (event, context) => {
         return { code: 400, message: '未知操作', data: null };
     }
   } catch (err) {
-    return { code: 500, message: err.message, data: null };
+    console.error('reports failed', err);
+    return { code: 500, message: '服务暂时不可用', data: null };
   }
 };
 
@@ -53,22 +57,25 @@ async function getOrCreateUser(openid) {
   const res = await db.collection('users').add({
     data: {
       openid,
-      nickname: '家长用户',
+      nickname: null,
       avatar_url: null,
+      phone: null,
+      role: 'user',
       status: 1,
-      api_token: null,
       created_at: now,
       updated_at: now,
+      last_login_at: now,
     },
   });
 
   return {
     _id: res._id,
     openid,
-    nickname: '家长用户',
+    nickname: null,
     avatar_url: null,
+    phone: null,
+    role: 'user',
     status: 1,
-    api_token: null,
   };
 }
 

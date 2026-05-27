@@ -3,7 +3,6 @@ import { authApi } from './api/auth';
 
 App<IAppOption>({
   globalData: {
-    token: '',
     userId: '',
     currentChildId: '',
     loginPromise: null as Promise<void> | null,
@@ -21,11 +20,10 @@ App<IAppOption>({
       });
     }
 
-    const token = wx.getStorageSync('token');
+    wx.removeStorageSync('token');
     const userId = wx.getStorageSync('userId');
     const currentChildId = wx.getStorageSync('currentChildId');
 
-    if (token) this.globalData.token = token;
     if (userId) this.globalData.userId = userId;
     if (currentChildId) this.globalData.currentChildId = currentChildId;
 
@@ -34,7 +32,7 @@ App<IAppOption>({
 
   async ensureLogin() {
     try {
-      const loginRes = await authApi.wechatLogin({ nickname: '家长用户' });
+      const loginRes = await authApi.wechatLogin();
       const newUserId = loginRes.data.user.id;
 
       if (this.globalData.userId && this.globalData.userId !== newUserId) {
@@ -42,12 +40,10 @@ App<IAppOption>({
         this.globalData.currentChildId = '';
       }
 
-      this.globalData.token = loginRes.data.token;
       this.globalData.userId = newUserId;
       this.globalData.isNewUser = !!loginRes.data.is_new;
       this.globalData.nickname = loginRes.data.user.nickname || '';
       this.globalData.avatarUrl = loginRes.data.user.avatar_url || '';
-      wx.setStorageSync('token', loginRes.data.token);
       wx.setStorageSync('userId', newUserId);
     } catch (err) {
       console.error('自动登录失败', err);
@@ -57,7 +53,6 @@ App<IAppOption>({
 
 interface IAppOption {
   globalData: {
-    token: string;
     userId: string;
     currentChildId: string;
     loginPromise: Promise<void> | null;

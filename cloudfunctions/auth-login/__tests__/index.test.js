@@ -76,23 +76,6 @@ describe('auth-login', () => {
     });
   });
 
-  describe('generateToken', () => {
-    function generateToken() {
-      return crypto.randomBytes(32).toString('hex');
-    }
-
-    test('generates 64-char hex string', () => {
-      const token = generateToken();
-      expect(token).toMatch(/^[a-f0-9]{64}$/);
-    });
-
-    test('generates unique tokens', () => {
-      const token1 = generateToken();
-      const token2 = generateToken();
-      expect(token1).not.toBe(token2);
-    });
-  });
-
   describe('main function', () => {
     test('returns 401 when openid is missing', async () => {
       jest.mock('wx-server-sdk', () => ({
@@ -129,7 +112,6 @@ describe('auth-login', () => {
                     openid: 'test_openid',
                     nickname: 'test',
                     avatar_url: null,
-                    api_token: 'token123',
                   },
                 ],
               })),
@@ -166,7 +148,6 @@ describe('auth-login', () => {
                         openid: 'test_openid',
                         nickname: 'Test User',
                         avatar_url: null,
-                        api_token: 'old_token',
                       },
                     ],
                   };
@@ -187,8 +168,9 @@ describe('auth-login', () => {
       const { main } = require('../index');
       const result = await main({ action: 'login', nickname: 'New Name' }, {});
       expect(result.code).toBe(0);
-      expect(result.data.token).toBeDefined();
-      expect(result.data.user.nickname).toBe('New Name');
+      expect(result.data.token).toBeUndefined();
+      expect(result.data.user.openid).toBeUndefined();
+      expect(result.data.user.nickname).toBe('Test User');
     });
 
     test('handles parent_status action', async () => {
@@ -204,7 +186,6 @@ describe('auth-login', () => {
                     _id: 'user1',
                     openid: 'test_openid',
                     parent_pin_hash: 'hash123',
-                    api_token: 'token',
                   },
                 ],
               })),
@@ -237,7 +218,6 @@ describe('auth-login', () => {
                   {
                     _id: 'user1',
                     openid: 'test_openid',
-                    api_token: 'token',
                   },
                 ],
               })),
@@ -272,7 +252,6 @@ describe('auth-login', () => {
                     openid: 'test_openid',
                     parent_pin_hash: null,
                     parent_pin_salt: null,
-                    api_token: 'token',
                   },
                 ],
               })),

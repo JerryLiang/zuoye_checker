@@ -50,7 +50,6 @@ Page({
           wx.clearStorageSync();
           clearParentAuth();
           const app = getApp<IAppOption>();
-          app.globalData.token = '';
           app.globalData.userId = '';
           app.globalData.currentChildId = '';
           wx.showToast({ title: '已清除', icon: 'success' });

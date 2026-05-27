@@ -1,38 +1,38 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', { value: true });
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.homeworkApi = void 0;
 async function callHomeworks(action, data = {}, options = {}) {
-  const callOptions = {
-    name: 'homeworks',
-    data: { action, ...data },
-  };
-  if (options.timeout) {
-    callOptions.timeout = options.timeout;
-  }
-  const res = await wx.cloud.callFunction(callOptions);
-  const result = res.result;
-  if (result.code !== 0) {
-    throw new Error(result.message || '请求失败');
-  }
-  return result;
+    const callOptions = {
+        name: 'homeworks',
+        data: { action, ...data },
+    };
+    if (options.timeout) {
+        callOptions.timeout = options.timeout;
+    }
+    const res = await wx.cloud.callFunction(callOptions);
+    const result = res.result;
+    if (result.code !== 0) {
+        throw new Error(result.message || '请求失败');
+    }
+    return result;
 }
 exports.homeworkApi = {
-  list(child_id) {
-    return callHomeworks('list', { data: child_id ? { child_id } : {} });
-  },
-  get(id) {
-    return callHomeworks('get', { id });
-  },
-  create(payload) {
-    return callHomeworks('create', { data: payload });
-  },
-  recognizeImage(file_asset_id) {
-    return callHomeworks('recognize_image', { data: { file_asset_id } }, { timeout: 60000 });
-  },
-  update(id, payload) {
-    return callHomeworks('update', { id, data: payload });
-  },
-  remove(id) {
-    return callHomeworks('delete', { id });
-  },
+    list(child_id) {
+        return callHomeworks('list', { data: child_id ? { child_id } : {} });
+    },
+    get(id) {
+        return callHomeworks('get', { id });
+    },
+    create(payload) {
+        return callHomeworks('create', { data: payload });
+    },
+    recognizeImage(file_asset_id) {
+        return callHomeworks('recognize_image', { data: { file_asset_id } }, { timeout: 60000 });
+    },
+    update(id, payload) {
+        return callHomeworks('update', { id, data: payload });
+    },
+    remove(id) {
+        return callHomeworks('delete', { id });
+    },
 };

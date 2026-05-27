@@ -179,6 +179,6 @@ describe('children', () => {
     const { main } = require('../index');
     const result = await main({ action: 'list' }, {});
     expect(result.code).toBe(500);
-    expect(result.message).toBe('db connection failed');
+    expect(result.message).toBe('服务暂时不可用');
   });
 });

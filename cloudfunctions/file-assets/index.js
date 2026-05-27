@@ -18,6 +18,9 @@ exports.main = async (event, context) => {
   try {
     await ensureCollections(['users', 'children', 'file_assets']);
     const user = await getOrCreateUser(openid);
+    if ((user.status ?? 1) !== 1) {
+      return { code: 403, message: '账号已停用', data: null };
+    }
 
     switch (action) {
       case 'create':
@@ -26,7 +29,8 @@ exports.main = async (event, context) => {
         return { code: 400, message: '未知操作', data: null };
     }
   } catch (err) {
-    return { code: 500, message: err.message, data: null };
+    console.error('file-assets failed', err);
+    return { code: 500, message: '服务暂时不可用', data: null };
   }
 };
 
@@ -57,22 +61,25 @@ async function getOrCreateUser(openid) {
   const res = await db.collection('users').add({
     data: {
       openid,
-      nickname: '家长用户',
+      nickname: null,
       avatar_url: null,
+      phone: null,
+      role: 'user',
       status: 1,
-      api_token: null,
       created_at: now,
       updated_at: now,
+      last_login_at: now,
     },
   });
 
   return {
     _id: res._id,
     openid,
-    nickname: '家长用户',
+    nickname: null,
     avatar_url: null,
+    phone: null,
+    role: 'user',
     status: 1,
-    api_token: null,
   };
 }
 
