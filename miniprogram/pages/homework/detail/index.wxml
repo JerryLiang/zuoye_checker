@@ -57,7 +57,7 @@
               </view>
               <view class="task-title-wrap">
                 <text class="task-title">{{item.title}}</text>
-                <text class="task-action-tip">{{item.status === 2 || canManage ? '点开查看' : (item.status === 3 ? '点开修改提交' : '点开提交')}}</text>
+                <text class="task-action-tip">{{item.status === 2 ? '点开查看' : (canManage ? '点开编辑' : (item.status === 3 ? '点开修改提交' : '点开提交'))}}</text>
               </view>
             </view>
             <text class="status-tag {{item.status === 2 ? 'tag-done' : (item.status === 3 ? 'tag-submitted' : 'tag-pending')}}">

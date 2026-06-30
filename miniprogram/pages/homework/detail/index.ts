@@ -56,7 +56,7 @@ Page({
   goSubmit(e: WechatMiniprogram.BaseEvent) {
     const id = e.currentTarget.dataset.id;
     const status = Number(e.currentTarget.dataset.status || 1);
-    const mode = this.data.canManage || status === 2 ? 'view' : 'edit';
+    const mode = status === 2 ? 'view' : 'edit';
     const role = this.data.canManage ? 'parent' : 'child';
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}&mode=${mode}&role=${role}` });
   },

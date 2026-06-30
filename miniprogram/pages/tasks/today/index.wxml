@@ -51,7 +51,7 @@
       </view>
       <view class="task-actions">
         <view class="btn-submit" data-id="{{item._id}}" data-status="{{item.status}}" catchtap="goSubmit">
-          {{canManage ? '查看' : (item.status === 2 ? '查看' : (item.status === 3 ? '修改' : '去完成'))}}
+          {{canManage ? (item.status === 2 ? '查看' : '编辑') : (item.status === 2 ? '查看' : (item.status === 3 ? '修改' : '去完成'))}}
         </view>
         <view wx:if="{{canManage && item.status === 1}}" class="btn-submit danger" data-id="{{item._id}}" catchtap="onDeleteTask">删除</view>
       </view>

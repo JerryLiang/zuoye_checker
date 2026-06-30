@@ -53,7 +53,7 @@ Page({
     const id = e.currentTarget.dataset.id;
     const status = Number(e.currentTarget.dataset.status || 1);
     const role = this.data.canManage ? 'parent' : 'child';
-    const mode = this.data.canManage || status === 2 ? 'view' : 'edit';
+    const mode = status === 2 ? 'view' : 'edit';
     wx.navigateTo({ url: `/pages/tasks/submit/index?taskId=${id}&mode=${mode}&role=${role}` });
   },
 

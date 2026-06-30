@@ -29,7 +29,7 @@ Page({
     },
     async onLoad(query) {
         const role = query.role === 'parent' ? 'parent' : 'child';
-        const readOnly = query.mode === 'view' || role === 'parent';
+        const readOnly = query.mode === 'view';
         this.setData({ taskId: query.taskId || '', readOnly, role });
         await this.loadTask();
     },
